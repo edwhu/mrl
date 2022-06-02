@@ -6,8 +6,9 @@
 from .maze_env import Env
 import gym
 import numpy as np
-import torch
+# import torch
 import matplotlib
+import matplotlib.pyplot as plt
 
 
 class Obstacle:
@@ -154,6 +155,7 @@ class PointMaze2D(gym.GoalEnv):
     self.max_steps = 50
     self.num_steps = 0
     self.test = test
+    self.background = None
 
   def seed(self, seed=None):
     return self.maze.seed(seed=seed)
@@ -202,7 +204,30 @@ class PointMaze2D(gym.GoalEnv):
     }
 
   def render(self):
-    raise NotImplementedError
+    # https://stackoverflow.com/questions/29277080/efficient-matplotlib-redrawing
+    if self.background is None:
+      self.fig, self.ax = plt.subplots(1, 1, figsize=(1, 1))
+      self.maze.plot(self.ax) # plot the walls
+      self.ax.scatter(x=[self.g_xy[0]], y=[self.g_xy[1]], c="b", marker="*", s=20)
+      self.ax.axis('off')
+      self.fig.tight_layout(pad=0)
+      self.fig.canvas.draw()
+      self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
+      self.scatter = self.ax.scatter([], [], s=10, color='red')
+
+    self.fig.canvas.restore_region(self.background)
+    self.scatter.set_offsets(self.s_xy)
+    self.ax.draw_artist(self.scatter)
+    self.fig.canvas.blit(self.ax.bbox)
+    image_from_plot = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
+    image_from_plot = image_from_plot.reshape(self.fig.canvas.get_width_height()[::-1] + (3,))
+    return image_from_plot
+
+  def clear_plots(self):
+    plt.clf()
+    plt.cla()
+    plt.close(self.fig)
+    self.background = None
 
   def compute_reward(self, achieved_goal, desired_goal, info):
     d = np.linalg.norm(achieved_goal - desired_goal, axis=-1)

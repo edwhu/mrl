@@ -7,7 +7,7 @@ from envs.sibrivalry.ant_maze.create_maze_env import create_maze_env
 
 import gym
 import numpy as np
-import torch
+# import torch
 from gym.utils import seeding
 
 class AntMazeEnv(gym.GoalEnv):
