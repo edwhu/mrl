@@ -30,6 +30,5 @@ if __name__ == "__main__":
     maze = PointMaze2D()
     fig, ax = plt.subplots(1, 1, figsize=(1, 1))
     maze.maze.plot(ax) # plot the walls
-    # import ipdb; ipdb.set_trace()
     plot_heatmap(-0.5, 9.5, -0.5, 9.5, 100, 100, maze.g_xy[0], maze.g_xy[1])
     

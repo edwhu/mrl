@@ -259,6 +259,7 @@ class Maze:
 
         g_square = self.goal_squares[self.np_random.randint(low=0, high=len(self.goal_squares))]
         g_square_loc = self._segments[g_square]['loc']
+        # import ipdb;ipdb.set_trace()
         while True:
             shift = self.np_random.uniform(low=-0.5, high=0.5, size=(2,))
             loc = g_square_loc + shift
@@ -593,4 +594,5 @@ segments_crazy = [
      {'anchor': '8,9', 'direction': 'right', 'name': '9,9'},
      {'anchor': '9,9', 'direction': 'down', 'name': '9,8'}
 ]
-mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='9,9'), 'action_range': 0.95}
+# mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='9,9'), 'action_range': 0.95}
+mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='1,9'), 'action_range': 0.95}

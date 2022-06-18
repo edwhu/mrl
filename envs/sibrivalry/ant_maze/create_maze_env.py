@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 # For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
 
-from envs.sibrivalry.ant_maze.ant_maze_env import AntMazeEnv
+from envs.sibrivalry.ant_maze.ant_maze_env import AntMazeEnv, AntMazeEnvFull
 
 
 def create_maze_env(env_name=None, top_down_view=False):
@@ -13,7 +13,7 @@ def create_maze_env(env_name=None, top_down_view=False):
     n_bins = 8
     env_name = env_name[3:]
   if env_name.startswith('Ant'):
-    cls = AntMazeEnv
+    cls = AntMazeEnvFull
     env_name = env_name[3:]
     maze_size_scaling = 8
   else:
