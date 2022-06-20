@@ -304,7 +304,6 @@ class StackEnv(fetch_env.FetchEnv, EzPickle):
 
     gripper_state = robot_qpos[-2:]
     gripper_vel = robot_qvel[-2:] * dt  # change to a scalar if the gripper is made symmetric
-
     if self.external_goal == GoalType.OBJ_GRIP:
       achieved_goal = np.concatenate(obj_poses + [grip_pos])
     else:

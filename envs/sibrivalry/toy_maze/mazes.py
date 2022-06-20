@@ -261,6 +261,7 @@ class Maze:
         else:
             g_square = self.goal_squares[goal_idx]
         g_square_loc = self._segments[g_square]['loc']
+        # import ipdb;ipdb.set_trace()
         while True:
             shift = self.np_random.uniform(low=-0.5, high=0.5, size=(2,))
             loc = g_square_loc + shift
