@@ -234,7 +234,7 @@ class Maze:
         if ax is None:
             _, ax = plt.subplots(1, 1, figsize=(5, 4))
         for x, y in self._walls:
-            ax.plot(x, y, 'k-')
+            ax.plot(x, y, 'k-', zorder=10)
 
     def sample_start(self):
         min_wall_dist = 0.05
@@ -251,13 +251,15 @@ class Maze:
                 break
         return loc[0], loc[1]
 
-    def sample_goal(self, min_wall_dist=None):
+    def sample_goal(self, min_wall_dist=None, goal_idx=None):
         if min_wall_dist is None:
             min_wall_dist = 0.1
         else:
             min_wall_dist = min(0.4, max(0.01, min_wall_dist))
-
-        g_square = self.goal_squares[self.np_random.randint(low=0, high=len(self.goal_squares))]
+        if goal_idx is None:
+            g_square = self.goal_squares[self.np_random.randint(low=0, high=len(self.goal_squares))]
+        else:
+            g_square = self.goal_squares[goal_idx]
         g_square_loc = self._segments[g_square]['loc']
         # import ipdb;ipdb.set_trace()
         while True:
@@ -594,5 +596,7 @@ segments_crazy = [
      {'anchor': '8,9', 'direction': 'right', 'name': '9,9'},
      {'anchor': '9,9', 'direction': 'down', 'name': '9,8'}
 ]
-# mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='9,9'), 'action_range': 0.95}
 mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='9,9'), 'action_range': 0.95}
+
+square_large_goals = ['9,9', '9,4', '9,0', '4,7', '0,9']
+mazes_dict['multigoal_square_large'] = {'maze': Maze(*segments_crazy, goal_squares=square_large_goals), 'action_range': 0.95}
