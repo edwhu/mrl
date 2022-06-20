@@ -13,9 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-from envs.sibrivalry.ant_maze.maze_env import MazeEnv
+from envs.sibrivalry.ant_maze.maze_env import MazeEnv, MazeEnvFull
 from envs.sibrivalry.ant_maze.ant import AntEnv
 
 
 class AntMazeEnv(MazeEnv):
     MODEL_CLASS = AntEnv
+
+class AntMazeEnvFull(MazeEnvFull):
+    MODEL_CLASS = AntEnv
+    def render(self, mode):
+        return self.wrapped_env.render(mode, height = 100, width = 100)

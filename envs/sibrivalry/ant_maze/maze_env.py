@@ -421,7 +421,6 @@ class MazeEnv(gym.Env):
                                    [wrapped_obs[3:]])
 
     range_sensor_obs = self.get_range_sensor_obs()
-
     return np.concatenate([wrapped_obs,
                            range_sensor_obs.flat] +
                            view + [[self.t * 0.001]])
@@ -500,3 +499,23 @@ class MazeEnv(gym.Env):
     next_obs = self._get_obs()
     done = False
     return next_obs, inner_reward, done, info
+
+class MazeEnvFull(MazeEnv):
+  def _get_obs(self):
+    wrapped_obs = self.wrapped_env._get_obs()
+    if self._top_down_view:
+      view = [self.get_top_down_view().flat]
+    else:
+      view = []
+
+    if self._observe_blocks:
+      additional_obs = []
+      for block_name, block_type in self.movable_blocks:
+        additional_obs.append(self.wrapped_env.get_body_com(block_name))
+      wrapped_obs = np.concatenate([wrapped_obs[:3]] + additional_obs +
+                                   [wrapped_obs[3:]])
+
+    range_sensor_obs = self.get_range_sensor_obs()
+    return np.concatenate([wrapped_obs,
+                           range_sensor_obs.flat] +
+                           view) #output is 29 dimensional instead of 30
