@@ -12,8 +12,12 @@ def create_maze_env(env_name=None, top_down_view=False):
   if env_name.startswith('Ego'):
     n_bins = 8
     env_name = env_name[3:]
-  if env_name.startswith('Ant'):
+  elif env_name.startswith('Ant') and env_name.endswith('Full'):
     cls = AntMazeEnvFull
+    env_name = env_name[3:]
+    maze_size_scaling = 8
+  elif env_name.startswith('Ant') and not env_name.endswith('Full'):
+    cls = AntMazeEnv
     env_name = env_name[3:]
     maze_size_scaling = 8
   else:
@@ -21,7 +25,7 @@ def create_maze_env(env_name=None, top_down_view=False):
 
   observe_blocks = False
   put_spin_near_agent = False
-  if env_name == 'Maze':
+  if env_name == 'Maze' or env_name == 'MazeFull':
     maze_id = 'Maze'
   elif env_name == 'Push':
     maze_id = 'Push'

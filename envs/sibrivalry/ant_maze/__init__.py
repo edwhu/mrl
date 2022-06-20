@@ -129,7 +129,7 @@ class AntMazeEnv(gym.GoalEnv):
 
 class AntMazeEnvFull(gym.GoalEnv):
   """Wraps the HIRO/SR Ant Environments in a gym goal env."""
-  def __init__(self, variant='AntMaze-SR', eval=False):
+  def __init__(self, variant='AntMazeFull-SR', eval=False):
 
     self.done_env = False
     if eval:
@@ -142,7 +142,7 @@ class AntMazeEnvFull(gym.GoalEnv):
     mazename = variant.split('-')
     if len(mazename) == 2:
       mazename, test_goals = mazename
-      assert mazename == 'AntMaze'
+      assert mazename == 'AntMazeFull'
       self.goal_dims = list(range(29))
       self.eval_dims = [0, 1]
       if test_goals == 'SR':
@@ -167,7 +167,6 @@ class AntMazeEnvFull(gym.GoalEnv):
           self.eval_dims = [0, 1]
       else:
         raise ValueError('Bad maze name!')
-
 
     self.maze = create_maze_env(mazename) # this returns a gym environment
     self.seed()

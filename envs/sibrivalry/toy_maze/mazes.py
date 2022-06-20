@@ -595,4 +595,4 @@ segments_crazy = [
      {'anchor': '9,9', 'direction': 'down', 'name': '9,8'}
 ]
 # mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='9,9'), 'action_range': 0.95}
-mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='1,9'), 'action_range': 0.95}
+mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='9,9'), 'action_range': 0.95}

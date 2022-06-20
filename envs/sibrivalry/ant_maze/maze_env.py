@@ -894,7 +894,7 @@ class MazeEnvFull(gym.Env):
     range_sensor_obs = self.get_range_sensor_obs()
     return np.concatenate([wrapped_obs,
                            range_sensor_obs.flat] +
-                           view)
+                           view) #output is 29 dimensional instead of 30
 
   def reset(self):
     self.t = 0
