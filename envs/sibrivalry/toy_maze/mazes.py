@@ -597,5 +597,6 @@ segments_crazy = [
 ]
 mazes_dict['square_large'] = {'maze': Maze(*segments_crazy, goal_squares='9,9'), 'action_range': 0.95}
 
-square_large_goals = ['9,9', '9,4', '9,0', '4,7', '0,9']
+# square_large_goals = ['9,9', '9,4', '9,0', '4,7', '0,9']
+square_large_goals = ['9,9', '9,4', '9,0', '6,9', '6,4', '6,0', '3,9', '3,4', '3,0', '0,9', '0,4']
 mazes_dict['multigoal_square_large'] = {'maze': Maze(*segments_crazy, goal_squares=square_large_goals), 'action_range': 0.95}
