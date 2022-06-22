@@ -45,7 +45,6 @@ class AntEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     self._body_com_indices = {}
     self._body_comvel_indices = {} 
     mujoco_env.MujocoEnv.__init__(self, file_path, 5)
-    self.init_qpos[1] = 18  
     utils.EzPickle.__init__(self)
 
   @property
