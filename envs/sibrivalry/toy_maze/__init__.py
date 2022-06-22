@@ -241,7 +241,7 @@ class MultiGoalPointMaze2D(PointMaze2D):
   test mode: just log current goal.
   """
   def __init__(self, test=False):
-    super().__init__()
+    super(PointMaze2D).__init__()
     self._env = Env(n=50, maze_type='multigoal_square_large', use_antigoal=False, ddiff=False, ignore_reset_start=True)
     self.maze = self._env.maze
     self.dist_threshold = 0.15
@@ -318,7 +318,7 @@ class MultiGoalPointMaze2D(PointMaze2D):
       g_square = self.maze.goal_squares[goal_idx]
       g_xy = self.maze._segments[g_square]['loc']
       # compute normal success - if we reach within 0.15
-      reward = self.compute_reward(self.s_xy, g_xy, info)
+      reward = self.compute_reward(self.s_xy, self.g_xy, info)
       # -1 if not close, 0 if close.
       # map to 0 if not close, 1 if close.
       info[f"metric_success/goal_{goal_idx}"] = reward + 1
