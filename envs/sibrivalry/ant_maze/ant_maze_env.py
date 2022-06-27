@@ -24,3 +24,8 @@ class AntMazeEnvFull(MazeEnvFull):
     MODEL_CLASS = AntEnv
     def render(self, mode):
         return self.wrapped_env.render(mode, height = 100, width = 100)
+
+class AntMazeEnvFullDownscale(MazeEnvFull):
+    MODEL_CLASS = AntEnv
+    def render(self, mode):
+        return self.wrapped_env.render(mode, height = 100, width = 100)
