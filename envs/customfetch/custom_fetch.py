@@ -102,8 +102,8 @@ def get_obs(sim, external_goal, goal, subtract_obj_velp=True):
   gripper_vel = robot_qvel[-2:] * dt  # change to a scalar if the gripper is made symmetric
 
   items = [
-      grip_pos,
       object_pos,
+      grip_pos,
       object_rel_pos,
       gripper_state,
       object_rot,
