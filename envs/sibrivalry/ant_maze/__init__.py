@@ -270,7 +270,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
       self.goal_dims = list(range(29))
       self.eval_dims = [0, 1]
       if test_goals == 'SR':
-        self.sample_goal = lambda: self.np_random.uniform([-3.5, 12.5], [3.5, 19.5]).astype(np.float32)
+        self.sample_goal = lambda: self.np_random.uniform([-0.875, 3.125], [0.875, 4.875]).astype(np.float32)
         self.dist_threshold = 1.0
         if eval:
           self.done_env = True
