@@ -571,7 +571,19 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
       self.minimum_air = 0.
       self.maximum_air = range_max
     self.in_air_percentage = n
-    super().__init__(reward_type='sparse')
+    # super().__init__(reward_type='sparse')
+    initial_qpos = {
+        'robot0:slide0': 0.405,
+        'robot0:slide1': 0.48,
+        'robot0:slide2': 0.0,
+        'object0:joint': [1.25, 0.53, 0.4, 1., 0., 0., 0.],
+    }
+    fetch_env.FetchEnv.__init__(
+        self, PPXML, has_object=True, block_gripper=False, n_substeps=20,
+        gripper_extra_height=0.2, target_in_the_air=True, target_offset=0.0,
+        obj_range=0.15, target_range=0.15, distance_threshold=0.05,
+        initial_qpos=initial_qpos, reward_type="sparse")
+    EzPickle.__init__(self)
 
     if distance_threshold > 1e-5:
       self.distance_threshold = distance_threshold
@@ -600,10 +612,11 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     # Visualize target.
     sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
     site_id = self.sim.model.site_name2id('target0')
-
-    goal = self.goal[:3]
-
-    self.sim.model.site_pos[site_id] = goal - sites_offset[0]
+    obj_goal = self.goal[:3]
+    self.sim.model.site_pos[site_id] = obj_goal - sites_offset[0]
+    site_id = self.sim.model.site_name2id('target1')
+    grip_goal = self.goal[3:6]
+    self.sim.model.site_pos[site_id] = grip_goal - sites_offset[0] 
     self.sim.forward()
 
   def _get_obs(self):
