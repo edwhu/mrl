@@ -613,8 +613,8 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
     site_id = self.sim.model.site_name2id('target0')
     obj_goal = self.goal[:3]
+    self.sim.model.site_pos[site_id] = obj_goal - sites_offset[0]
     if self.internal_goal == GoalType.ALL:
-      self.sim.model.site_pos[site_id] = obj_goal - sites_offset[0]
       site_id = self.sim.model.site_name2id('target1')
       grip_goal = self.goal[3:6]
       self.sim.model.site_pos[site_id] = grip_goal - sites_offset[0] 
