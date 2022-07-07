@@ -647,6 +647,10 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     self.num_step = 0
     return obs
 
+  def get_metrics_dict(self):
+    info = {"is_success": float(False)}
+    return info
+
 
 ###########
 # Environments with random weight matrix goal projection
