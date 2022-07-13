@@ -63,9 +63,7 @@ def compute_reward(achieved_goal, goal, internal_goal, distance_threshold, per_d
     if len(achieved_goal.shape) == 1:
       d = goal_distance(achieved_goal[:3], goal[:3])
     else:
-      d = goal_distance(achieved_goal[:, :3], goal[:, :3])
-  elif internal_goal == GoalType.ALL:
-    d = goal_distance(achieved_goal, goal)  
+      d = goal_distance(achieved_goal[:, :3], goal[:, :3]) 
   else:
     raise
 
