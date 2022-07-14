@@ -23,4 +23,15 @@ class AntMazeEnv(MazeEnv):
 class AntMazeEnvFull(MazeEnvFull):
     MODEL_CLASS = AntEnv
     def render(self, mode):
-        return self.wrapped_env.render(mode, height = 100, width = 100)
+        if mode == "rgb_array":
+            return self.wrapped_env.sim.render(height=100, width=100, camera_name="external_camera_0")[::-1]
+        else:
+            return self.wrapped_env.render(mode, height=100, width=100)
+
+class AntMazeEnvFullDownscale(MazeEnvFull):
+    MODEL_CLASS = AntEnv
+    def render(self, mode):
+        if mode == "rgb_array":
+            return self.wrapped_env.sim.render(height=100, width=100, camera_name="external_camera_0")[::-1]
+        else:
+            return self.wrapped_env.render(mode, height=100, width=100)
