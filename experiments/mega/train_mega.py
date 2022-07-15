@@ -147,7 +147,7 @@ def main(args):
 
   # 7. Make the agent and run the training loop.
   agent = mrl.config_to_agent(config)
-
+  # import ipdb; ipdb.set_trace()
   if args.visualize_trained_agent:
     print("Loading agent at epoch {}".format(0))
     agent.load('checkpoint')
