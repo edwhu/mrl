@@ -66,7 +66,9 @@
         </body>
       </body>
     </body>
-
+    <body name="robot0:external_camera_body_0" pos="0 0 0">
+			<camera euler="20 0.75 0" fovy="90" name="external_camera_0" pos="2.25 1 5.2"></camera>
+		</body>
   </worldbody>
   <actuator>
     <motor joint="hip_4" ctrlrange="-30.0 30.0" ctrllimited="true" />
