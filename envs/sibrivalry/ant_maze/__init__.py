@@ -415,8 +415,6 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     goal_idxs = [goal_idx] if goal_idx is not None else range(len(self.goal_list))
     for goal_idx in goal_idxs:
       g_xy = np.concatenate((self.goal_list[goal_idx], other_dims))
-      # import ipdb; ipdb.set_trace()
-      # g_xy = self.maze._segments[g_square]['loc']
       # compute normal success - if we reach within 0.15
       reward = self.compute_reward(self.s_xy[:2], self.g_xy[:2], info)
       # -1 if not close, 0 if close.
