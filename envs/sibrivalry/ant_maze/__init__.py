@@ -359,7 +359,6 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
   1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
  -1.15506861e+00,  5.25953435e-01,  7.11716520e-01], np.zeros(14)])
     if len(self.goal_list) > 0:
-      print(self.maze.wrapped_env.sim.data.qpos[:2])
       self.g_xy = np.concatenate((self.goal_list[self.goal_idx], other_dims))
       # self.maze.wrapped_env.set_state(self.g_xy[:15], self.g_xy[15:])
       # self.maze.wrapped_env.sim.forward()
