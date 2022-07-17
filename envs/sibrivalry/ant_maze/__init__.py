@@ -262,7 +262,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     state_dims = 29
     self.goal_list = []
     # top left: [0.00, 4.20], top right: [4.20, 4.20], middle top: [2.25, 4.20], middle right: [4.20, 2.25], bottom right: [4.20, 0.00]
-    self.goal_list = [[0.00, 4.20], [2.25, 4.20], [4.20, 4.20], [4.20, 2.25], [4.20, 0.00]]
+    self.goal_list = np.array([[0.00, 4.20], [2.25, 4.20], [4.20, 4.20], [4.20, 2.25], [4.20, 0.00]])
     self.goal_idx = 0
     mazename = variant.split('-')
     if len(mazename) == 2:
