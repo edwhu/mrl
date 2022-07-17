@@ -296,7 +296,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     self.maze = create_maze_env(mazename) # this returns a gym environment
     self.seed()
     self.max_steps = 500
-    self.dist_threshold = 1.0
+    self.dist_threshold = 1.0 # TODO: Check if it's necessary to adjust for the smaller antmaze
 
 
     self.action_space = self.maze.action_space
@@ -390,7 +390,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
   def render(self, mode):
     return self.maze.render(mode)
 
-  def compute_reward(self, achieved_goal, desired_goal, info, dist_threshold = None):
+  def compute_reward(self, achieved_goal, desired_goal, info):
     if len(achieved_goal.shape) == 2:
       ag = achieved_goal[:,self.eval_dims]
       dg = desired_goal[:,self.eval_dims]
@@ -408,21 +408,14 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     return self.goal_list
     
   def add_pertask_success(self, info, goal_idx = None):
-    other_dims = np.concatenate([[6.08193526e-01,  9.87496030e-01,
-      1.82685311e-03, -6.82827458e-03,  1.57485326e-01,  5.14617396e-02,
-      1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
-    -1.15506861e+00,  5.25953435e-01,  7.11716520e-01], np.zeros(14)])
     goal_idxs = [goal_idx] if goal_idx is not None else range(len(self.goal_list))
     for goal_idx in goal_idxs:
-      g_xy = np.concatenate((self.goal_list[goal_idx], other_dims))
+      g_xy = self.goal_list[goal_idx]
       # compute normal success - if we reach within 0.15
-      reward = self.compute_reward(self.s_xy[:2], self.g_xy[:2], info)
+      reward = self.compute_reward(self.s_xy[:2], g_xy[:2], info)
       # -1 if not close, 0 if close.
       # map to 0 if not close, 1 if close.
       info[f"metric_success/goal_{goal_idx}"] = reward + 1
-      # compute lenient success metric.
-      reward = self.compute_reward(self.s_xy[:2], g_xy[:2], info)
-      info[f"metric_success_cell/goal_{goal_idx}"] = reward + 1
     return info
 
   def get_metrics_dict(self):
