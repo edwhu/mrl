@@ -63,7 +63,9 @@ def compute_reward(achieved_goal, goal, internal_goal, distance_threshold, per_d
     if len(achieved_goal.shape) == 1:
       d = goal_distance(achieved_goal[:3], goal[:3])
     else:
-      d = goal_distance(achieved_goal[:, :3], goal[:, :3]) 
+      d = goal_distance(achieved_goal[:, :3], goal[:, :3])
+  elif internal_goal == GoalType.ALL:
+    d = goal_distance(achieved_goal, goal)  
   else:
     raise
 
@@ -100,8 +102,8 @@ def get_obs(sim, external_goal, goal, subtract_obj_velp=True):
   gripper_vel = robot_qvel[-2:] * dt  # change to a scalar if the gripper is made symmetric
 
   items = [
-      grip_pos,
       object_pos,
+      grip_pos,
       object_rel_pos,
       gripper_state,
       object_rot,
@@ -569,7 +571,19 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
       self.minimum_air = 0.
       self.maximum_air = range_max
     self.in_air_percentage = n
-    super().__init__(reward_type='sparse')
+    # super().__init__(reward_type='sparse')
+    initial_qpos = {
+        'robot0:slide0': 0.405,
+        'robot0:slide1': 0.48,
+        'robot0:slide2': 0.0,
+        'object0:joint': [1.25, 0.53, 0.4, 1., 0., 0., 0.],
+    }
+    fetch_env.FetchEnv.__init__(
+        self, PPXML, has_object=True, block_gripper=False, n_substeps=20,
+        gripper_extra_height=0.2, target_in_the_air=True, target_offset=0.0,
+        obj_range=0.15, target_range=0.15, distance_threshold=0.05,
+        initial_qpos=initial_qpos, reward_type="sparse")
+    EzPickle.__init__(self)
 
     if distance_threshold > 1e-5:
       self.distance_threshold = distance_threshold
@@ -598,10 +612,12 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     # Visualize target.
     sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
     site_id = self.sim.model.site_name2id('target0')
-
-    goal = self.goal[:3]
-
-    self.sim.model.site_pos[site_id] = goal - sites_offset[0]
+    obj_goal = self.goal[:3]
+    self.sim.model.site_pos[site_id] = obj_goal - sites_offset[0]
+    if self.internal_goal == GoalType.ALL:
+      site_id = self.sim.model.site_name2id('target1')
+      grip_goal = self.goal[3:6]
+      self.sim.model.site_pos[site_id] = grip_goal - sites_offset[0] 
     self.sim.forward()
 
   def _get_obs(self):
@@ -630,6 +646,10 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     obs = super().reset()
     self.num_step = 0
     return obs
+
+  def get_metrics_dict(self):
+    info = {"is_success": float(False)}
+    return info
 
 
 ###########
