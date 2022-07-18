@@ -412,7 +412,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     for goal_idx in goal_idxs:
       g_xy = self.goal_list[goal_idx]
       # compute normal success - if we reach within 0.15
-      reward = self.compute_reward(self.s_xy[:2], g_xy[:2], info)
+      reward = self.compute_reward(self.s_xy[:2], np.array(g_xy[:2]), info)
       # -1 if not close, 0 if close.
       # map to 0 if not close, 1 if close.
       info[f"metric_success/goal_{goal_idx}"] = reward + 1
