@@ -309,6 +309,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     })
     self.num_steps = 0
     self.s_xy = self.maze.wrapped_env.init_qpos
+    self.g_xy = np.array([0,0]) # temporary for rendering.
 
   def seed(self, seed=None):
     self.np_random, seed = seeding.np_random(seed)
@@ -387,6 +388,10 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     }
 
   def render(self, mode):
+    sim = self.maze.wrapped_env.sim
+    sites_offset = (sim.data.site_xpos - sim.model.site_pos)
+    site_id = sim.model.site_name2id('goal_site')
+    sim.model.site_pos[site_id][:2] = self.g_xy[:2] - sites_offset[site_id][:2]
     return self.maze.render(mode)
 
   def compute_reward(self, achieved_goal, desired_goal, info):
