@@ -392,6 +392,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     sites_offset = (sim.data.site_xpos - sim.model.site_pos)
     site_id = sim.model.site_name2id('goal_site')
     sim.model.site_pos[site_id][:2] = self.g_xy[:2] - sites_offset[site_id][:2]
+    sim.forward()
     return self.maze.render(mode)
 
   def compute_reward(self, achieved_goal, desired_goal, info):
