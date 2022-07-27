@@ -358,7 +358,7 @@ class StackEnv(fetch_env.FetchEnv, EzPickle):
         grip_velp, # 3d
         gripper_vel, # 2d
     ])
-      obs = achieved_goal
+      obs = achieved_goal.copy()
     else:
       achieved_goal = np.concatenate(obj_poses)
       obs = np.concatenate([grip_pos, gripper_state, grip_velp, gripper_vel] + sum(obj_feats, []))
