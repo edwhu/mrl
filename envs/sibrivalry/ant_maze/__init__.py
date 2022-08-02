@@ -443,13 +443,13 @@ class A1MazeEnvFullDownscale(gym.GoalEnv):
     state_dims = 37
     self.goal_list = []
     # top left: [0.00, 4.20], top right: [4.20, 4.20], middle top: [2.25, 4.20], middle right: [4.20, 2.25], bottom right: [4.20, 0.00]
-    self.goal_list = np.array([[0.00, 4.20], [2.25, 4.20], [4.20, 4.20], [4.20, 2.25], [4.20, 0.00]])
+    self.goal_list = np.array([[0.00, 4.20], [2.25, 4.20], [4.20, 4.20], [4.20, 2.25], [4.20, 0.00]]) / 2.0
     self.goal_idx = 0
     mazename = variant.split('-')
     if len(mazename) == 2:
       mazename, test_goals = mazename
       assert mazename == 'A1MazeFullDownscale'
-      self.goal_dims = list(range(29))
+      self.goal_dims = list(range(37))
       self.eval_dims = [0, 1]
       if test_goals == 'SR':
         self.sample_goal = lambda: self.np_random.uniform([-0.875, 3.125], [0.875, 4.875]).astype(np.float32)
@@ -541,10 +541,10 @@ class A1MazeEnvFullDownscale(gym.GoalEnv):
     _ = self.maze.wrapped_env.seed(self.np_random.randint(np.iinfo(np.int32).max))
     s = self.maze.reset().astype(np.float32)
     _ = self.maze.wrapped_env.seed(self.np_random.randint(np.iinfo(np.int32).max))
-    other_dims = np.concatenate([[0.23373489,  0.9960656,  -0.03255443, -0.07658879,
- -0.03045819, -0.03091255, -0.04024326,  0.03987999, -0.08337863,  0.04663998,
-  0.04318329, -0.04998588, -0.01650427, -0.00532716, -0.08114502, 0.00238603
- -0.01618169], np.zeros(19)])
+    other_dims = np.concatenate([[0.24556014,  0.986648,    0.09023235, -0.09100603,
+    0.10050705, -0.07250207, -0.01489305,  0.09989551, -0.05246516, -0.05311238,
+    -0.01864055, -0.05934234,  0.03910208, -0.08356607,  0.05515265, -0.00453086,
+    -0.01196933], np.zeros(18)])
     if len(self.goal_list) > 0:
       self.g_xy = np.concatenate((self.goal_list[self.goal_idx], other_dims))
       # self.maze.wrapped_env.set_state(self.g_xy[:15], self.g_xy[15:])

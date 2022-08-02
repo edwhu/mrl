@@ -78,10 +78,9 @@ class A1Env(mujoco_env.MujocoEnv, utils.EzPickle):
     #     reward_survive=survive_reward)
 
   def _get_obs(self):
-    # No cfrc observation
     obs = np.concatenate([
         self.physics.data.qpos.flat[:19],  # Ensures only ant obs.
-        self.physics.data.qvel.flat[:19],
+        self.physics.data.qvel.flat[:18],
     ])
     return obs
 
@@ -92,7 +91,7 @@ class A1Env(mujoco_env.MujocoEnv, utils.EzPickle):
 
     # Set everything other than ant to original position and 0 velocity.
     qpos[19:] = self.init_qpos[19:]
-    qvel[19:] = 0.
+    qvel[18:] = 0.
     self.set_state(qpos, qvel)
     return self._get_obs()
 

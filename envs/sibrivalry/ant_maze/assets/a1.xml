@@ -129,6 +129,9 @@
                 </body>
             </body>
         </body>
+    <body name="robot0:external_camera_body_0" pos="0 0 0">
+        <camera euler="0.15 0. 0" fovy="90" name="external_camera_0" pos="1.125 0.5 2.2"></camera>
+    </body>
     </worldbody>
     <actuator>
 

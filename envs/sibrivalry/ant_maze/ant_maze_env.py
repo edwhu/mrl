@@ -41,6 +41,6 @@ class A1MazeEnvFullDownscale(MazeEnvFull):
     MODEL_CLASS = A1Env
     def render(self, mode):
         if mode == "rgb_array":
-            return self.wrapped_env.sim.render(height=100, width=100, camera_name="external_camera_0")[::-1]
+            return self.wrapped_env.sim.render(height=150, width=150, camera_name="external_camera_0")[::-1]
         else:
-            return self.wrapped_env.render(mode, height=100, width=100)
+            return self.wrapped_env.render(mode, height=150, width=150)
