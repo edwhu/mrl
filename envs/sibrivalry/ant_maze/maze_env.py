@@ -232,6 +232,11 @@ class MazeEnv(gym.Env):
 
     _, file_path = tempfile.mkstemp(suffix='.xml', text=True)
     tree.write(file_path)
+    import shutil
+    # move a1 assets into tmp as well.
+    assets_path = os.path.join(MODEL_DIR if model_dir is None else model_dir, "a1_meshes")
+    if not os.path.exists('/tmp/a1_meshes'):
+      shutil.copytree(assets_path, '/tmp/a1_meshes')
 
     self.wrapped_env = model_cls(*args, file_path=file_path, **kwargs)
 
