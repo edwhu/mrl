@@ -437,7 +437,7 @@ class A1MazeEnvFullDownscale(gym.GoalEnv):
     self.eval = eval
     self.done_env = False
     if eval:
-      self.dist_threshold = 5.0
+      self.dist_threshold = 5.0/2
     else:
       self.dist_threshold = np.sqrt(2)
     state_dims = 37
