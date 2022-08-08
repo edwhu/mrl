@@ -674,12 +674,12 @@ class EasyPickPlaceEnv(PickPlaceEnv):
                target_range=0.05):
 
     push_1 = [1.34, 0.75 - 0.15, 0.41]
-    push_2 = [1.34, 0.75 + 0.15, 0.41]
+    # push_2 = [1.34, 0.75 + 0.15, 0.41]
     pnp_easy = [1.34, 0.75, 0.52]
     pnp_hard1 = [1.34 - 0.1, 0.75, 0.6]
     pnp_hard2 = [1.34 + 0.1, 0.75, 0.6]
 
-    self.all_goals = np.stack([push_1, push_2, pnp_easy, pnp_hard1, pnp_hard2])
+    self.all_goals = np.stack([push_1, pnp_easy, pnp_hard1, pnp_hard2])
     self.goal_idx = -1
 
     super().__init__(
