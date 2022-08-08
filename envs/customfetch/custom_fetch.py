@@ -561,7 +561,10 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
                distance_threshold=0.,
                n=0.5,
                range_min=0.2,
-               range_max=0.45):
+               range_max=0.45,
+               gripper_extra_height=0.2,
+               obj_range=0.15,
+               target_range=0.15):
     self.internal_goal = internal_goal
     self.external_goal = external_goal
     if hard:
@@ -580,8 +583,8 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     }
     fetch_env.FetchEnv.__init__(
         self, PPXML, has_object=True, block_gripper=False, n_substeps=20,
-        gripper_extra_height=0.2, target_in_the_air=True, target_offset=0.0,
-        obj_range=0.15, target_range=0.15, distance_threshold=0.05,
+        gripper_extra_height=gripper_extra_height, target_in_the_air=True, target_offset=0.0,
+        obj_range=obj_range, target_range=target_range, distance_threshold=0.05,
         initial_qpos=initial_qpos, reward_type="sparse")
     EzPickle.__init__(self)
 
@@ -650,6 +653,82 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
   def get_metrics_dict(self):
     info = {"is_success": float(False)}
     return info
+
+
+class EasyPickPlaceEnv(PickPlaceEnv):
+  # make initialization easier
+  def __init__(self,
+               max_step=51,
+               internal_goal=GoalType.OBJ,
+               external_goal=GoalType.OBJ,
+               mode="-1/0",
+               compute_reward_with_internal=False,
+               per_dim_threshold=None,
+               hard=False,
+               distance_threshold=0.,
+               n=0.5,
+               range_min=0.2,
+               range_max=0.45,
+               gripper_extra_height=0.16,
+               obj_range=0.02,
+               target_range=0.05):
+
+    push_1 = [1.3, 0.75 - 0.15, 0.41]
+    push_2 = [1.3, 0.75 + 0.15, 0.41]
+    pnp_easy = [1.3, 0.75, 0.52]
+    pnp_hard1 = [1.3 - 0.1, 0.75 - 0.1, 0.6]
+    pnp_hard2 = [1.3 + 0.1, 0.75 - 0.1, 0.6]
+
+    self.all_goals = np.stack([push_1, push_2, pnp_easy, pnp_hard1, pnp_hard2])
+    self.goal_idx = -1
+
+    super().__init__(
+               max_step=max_step,
+               internal_goal=internal_goal,
+               external_goal=external_goal,
+               mode=mode,
+               compute_reward_with_internal=compute_reward_with_internal,
+               per_dim_threshold=per_dim_threshold,
+               hard=hard,
+               distance_threshold=distance_threshold,
+               n=n,
+               range_min=range_min,
+               range_max=range_max,
+               gripper_extra_height=gripper_extra_height,
+               obj_range=obj_range,
+               target_range=target_range)
+
+  def _reset_sim(self):
+      self.sim.set_state(self.initial_state)
+
+      # Randomize start position of object.
+      if self.has_object:
+          object_xpos = self.initial_gripper_xpos[:2]
+          # while np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2]) < 0.1:
+          object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
+          object_qpos = self.sim.data.get_joint_qpos('object0:joint')
+          assert object_qpos.shape == (7,)
+          object_qpos[:2] = object_xpos
+          self.sim.data.set_joint_qpos('object0:joint', object_qpos)
+
+      self.sim.forward()
+      return True
+  
+  def set_goal_idx(self, idx):
+    self.goal_idx = idx
+
+  def get_goal_idx(self):
+    return self.goal_idx
+
+  def get_goals(self):
+    # push left
+    # push right
+    # pick place to directly above spawn, easy.
+    # pick place to somewhere further away. 
+    return self.all_goals
+
+  def _sample_goal(self):
+    return self.all_goals[self.goal_idx]
 
 
 ###########
