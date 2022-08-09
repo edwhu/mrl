@@ -4,6 +4,8 @@
 # For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
 
 from envs.sibrivalry.ant_maze.create_maze_env import create_maze_env
+from gym.envs.robotics import rotations
+from math import radians
 
 import gym
 import numpy as np
@@ -262,7 +264,22 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     state_dims = 29
     self.goal_list = []
     # top left: [0.00, 4.20], top right: [4.20, 4.20], middle top: [2.25, 4.20], middle right: [4.20, 2.25], bottom right: [4.20, 0.00]
-    self.goal_list = np.array([[0.00, 4.20], [2.25, 4.20], [4.20, 4.20], [4.20, 2.25], [4.20, 0.00]])
+    # self.goal_list = [[0.00, 4.20], [2.25, 4.20], [4.20, 4.20], [4.20, 2.25], [4.20, 0.00]]
+    self.goal_list = [[0.00, 4.20], [0.00, 4.20], [0.00, 4.20], [0.00, 4.20]]
+    other_dims = np.concatenate([[6.08193526e-01,  9.87496030e-01,
+    1.82685311e-03, -6.82827458e-03,  1.57485326e-01,  5.14617396e-02,
+    1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
+  -1.15506861e+00,  5.25953435e-01,  7.11716520e-01], np.zeros(14)])
+    for idx, g in enumerate(self.goal_list):
+      self.goal_list[idx] = np.concatenate([g, other_dims])
+
+    for i in range(4):
+      quat = self.goal_list[i][3:7]
+      euler = rotations.quat2euler(quat)
+      euler[2] += i * radians(90)
+      new_quat = rotations.euler2quat(euler)
+      self.goal_list[i][3:7] = new_quat
+    self.goal_list = np.array(self.goal_list)
     self.goal_idx = 0
     mazename = variant.split('-')
     if len(mazename) == 2:
@@ -368,18 +385,23 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     #     2.27648027e-02, -2.24103019e-02, -3.77942221e-02, -6.56355237e-02,
     #     1.35722257e-01,  6.93039877e-02, -1.71162114e-01, -1.12083335e-01,
     #     1.76819156e-02])
-    other_dims = np.concatenate([[6.08193526e-01,  9.87496030e-01,
-  1.82685311e-03, -6.82827458e-03,  1.57485326e-01,  5.14617396e-02,
-  1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
- -1.15506861e+00,  5.25953435e-01,  7.11716520e-01], np.zeros(14)])
+#     other_dims = np.concatenate([[6.08193526e-01,  9.87496030e-01,
+#   1.82685311e-03, -6.82827458e-03,  1.57485326e-01,  5.14617396e-02,
+#   1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
+#  -1.15506861e+00,  5.25953435e-01,  7.11716520e-01], np.zeros(14)])
     if len(self.goal_list) > 0:
-      self.g_xy = np.concatenate((self.goal_list[self.goal_idx], other_dims))
+      # self.g_xy = np.concatenate((self.goal_list[self.goal_idx], other_dims))
+      self.g_xy = self.goal_list[self.goal_idx]
       # self.maze.wrapped_env.set_state(self.g_xy[:15], self.g_xy[15:])
       # self.maze.wrapped_env.sim.forward()
       # img = self.maze.render("rgb_array")
       # import imageio
       # imageio.imwrite('goal_view.png', img)
     else:
+      other_dims = np.concatenate([[6.08193526e-01,  9.87496030e-01,
+    1.82685311e-03, -6.82827458e-03,  1.57485326e-01,  5.14617396e-02,
+    1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
+  -1.15506861e+00,  5.25953435e-01,  7.11716520e-01], np.zeros(14)])
       self.g_xy = np.concatenate((self.sample_goal(), other_dims))
     return {
       'observation': s,
