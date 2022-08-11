@@ -284,7 +284,7 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     mazename = variant.split('-')
     if len(mazename) == 2:
       mazename, test_goals = mazename
-      assert mazename == 'AntMazeFullDownscale'
+      assert mazename in {'AntMazeFullDownscale', 'AntHardMazeFullDownscale'} 
       self.goal_dims = list(range(29))
       self.eval_dims = [0, 1]
       if test_goals == 'SR':
@@ -452,6 +452,26 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     else:
       info = self.add_pertask_success(info, goal_idx=None)
     return info
+
+class AntHardMazeEnvFullDownscale(AntMazeEnvFullDownscale):
+  def __init__(self, variant='AntHardMazeFullDownscale-SR', eval=False):
+    super().__init__(variant=variant, eval=eval)
+    self.goal_list = [[0.0, 4.2] for _ in range(4)]
+    self.goal_list.extend([[4.2, 8.2] for _ in range(4)])
+    other_dims = np.concatenate([[6.08193526e-01,  9.87496030e-01,
+    1.82685311e-03, -6.82827458e-03,  1.57485326e-01,  5.14617396e-02,
+    1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
+  -1.15506861e+00,  5.25953435e-01,  7.11716520e-01], np.zeros(14)])
+    for idx, g in enumerate(self.goal_list):
+      self.goal_list[idx] = np.concatenate([g, other_dims])
+
+    for i in range(8):
+      quat = self.goal_list[i][3:7]
+      euler = rotations.quat2euler(quat)
+      euler[2] += i * radians(90)
+      new_quat = rotations.euler2quat(euler)
+      self.goal_list[i][3:7] = new_quat
+    self.goal_list = np.array(self.goal_list)
 
 class A1MazeEnvFullDownscale(gym.GoalEnv):
   """Wraps the A1 Environments in a gym goal env."""
