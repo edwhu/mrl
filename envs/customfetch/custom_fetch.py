@@ -654,6 +654,153 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     info = {"is_success": float(False)}
     return info
 
+class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
+  def __init__(self,
+               max_step=50,
+               n=2,
+               mode="-1/0",
+               hard=False,
+               distance_threshold=0.03,):
+    self.n = n
+    self.hard = hard
+    self.distance_threshold = distance_threshold
+
+    self.workspace_min = np.array([1.25, 0.5, 0.42])
+    self.workspace_max = np.array([1.6, 1.0, 0.6])
+
+    self.initial_qpos = initial_qpos = {
+        'robot0:slide0': 0.405,
+        'robot0:slide1': 0.48,
+        'robot0:slide2': 0.0,
+        'object0:joint': [1.3, 0.6, 0.41, 1., 0., 0., 0.],
+        'object1:joint': [1.3, 0.9, 0.41, 1., 0., 0., 0.],
+    }
+
+    fetch_env.FetchEnv.__init__(self,
+                                STACKXML.replace('#', '{}'.format(n)),
+                                has_object=True,
+                                block_gripper=False,
+                                n_substeps=20,
+                                gripper_extra_height=0.2,
+                                target_in_the_air=False,
+                                target_offset=0.0,
+                                obj_range=0.15,
+                                target_range=0.0,
+                                distance_threshold=0.05,
+                                initial_qpos=initial_qpos,
+                                reward_type='sparse')
+
+    EzPickle.__init__(self)
+
+    self.max_step = max(50 * (n - 1), 50)
+    self.num_step = 0
+
+    self.mode = 0
+    if mode == "0/1" or mode == 1:
+      self.mode = 1
+
+
+  def compute_reward(self, achieved_goal, goal, info):
+    ag_poses = np.array(np.split(achieved_goal[5:], self.n))
+    goal_poses = np.array(np.split(goal[5:], self.n))
+    dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=1)
+    succ_per_obj = dist_per_obj < self.distance_threshold
+    all_succ = np.all(succ_per_obj).astype(np.float32)
+    reward = all_succ - 1 # maps to -1 if fail, 0 if success.
+    return reward
+
+  def _get_obs(self):
+    # just return grip pos, n obj pos.
+    grip_pos = self.sim.data.get_site_xpos('robot0:grip')
+    robot_qpos, robot_qvel = utils.robot_get_obs(self.sim)
+    gripper_state = robot_qpos[-2:]
+    obj_poses = []
+    for i in range(self.n):
+      obj_labl = 'object{}'.format(i)
+      object_pos = self.sim.data.get_site_xpos(obj_labl).ravel()
+      object_pos[2] = max(object_pos[2], self.height_offset)
+      obj_poses.append(object_pos)
+    obj_poses = np.concatenate(obj_poses)
+    achieved_goal = np.concatenate([grip_pos, gripper_state, obj_poses])
+    obs = achieved_goal.copy()
+    return {
+        'observation': obs,
+        'achieved_goal': achieved_goal,
+        'desired_goal': self.goal.copy(),
+    }
+
+  def _render_callback(self):
+    # Visualize target.
+    sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos)
+    goals = np.split(self.goal[5:], self.n)
+    for i in range(self.n):
+      site_id = self.sim.model.site_name2id('target{}'.format(i))
+      self.sim.model.site_pos[site_id] = goals[i] - sites_offset[i]
+    self.sim.forward()
+
+  def _reset_sim(self):
+    self.sim.set_state(self.initial_state)
+
+    # Only a little randomize about the start state
+    # for i in range(self.n):
+      # object_qpos = self.sim.data.get_joint_qpos('object{}:joint'.format(i))
+      # object_qpos[:2] += self.np_random.uniform(-0.03, 0.03, size=2)
+      # self.sim.data.set_joint_qpos('object{}:joint'.format(i), object_qpos)
+
+    # bad_poses = [self.initial_gripper_xpos[:2]]
+    # Randomize start positions of boxes.
+    # for i in range(self.n):
+    #   object_xpos = self.initial_gripper_xpos[:2]
+    #   while min([np.linalg.norm(object_xpos - p) for p in bad_poses]) < 0.1:
+    #       object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
+    #   bad_poses.append(object_xpos)
+
+    #   object_qpos = self.sim.data.get_joint_qpos('object{}:joint'.format(i))
+    #   assert object_qpos.shape == (7,)
+    #   object_qpos[:2] = object_xpos
+    #   self.sim.data.set_joint_qpos('object{}:joint'.format(i), object_qpos)
+
+    self.sim.forward()
+    return True
+
+  def _sample_goal(self):
+    bottom_box = self.initial_gripper_xpos[:3] + self.np_random.uniform(-self.target_range, self.target_range, size=3)
+    bottom_box[2] = self.height_offset  #self.sim.data.get_joint_qpos('object0:joint')[:3]
+    gripper_state = np.array([-0.02, 0.02]) # Assume gripper state as open as possible
+    obj_pos = []
+    for i in range(self.n):
+      obj_pos.append(bottom_box + (np.array([0., 0., 0.05]) * i))
+    grip_pos = obj_pos[-1] + np.array([-0.01, 0., 0.008])
+    obj_pos = np.concatenate(obj_pos)
+    goal = np.concatenate([grip_pos, gripper_state, obj_pos])
+    return goal
+
+  def step(self, action):
+    # check if action is out of bounds
+    action = action.copy()
+    curr_eef_state = self.sim.data.get_site_xpos('robot0:grip')
+    next_eef_state = curr_eef_state + (action[:3] * 0.05)
+
+    next_eef_state = np.clip(next_eef_state, self.workspace_min, self.workspace_max)
+    clipped_ac = (next_eef_state - curr_eef_state) / 0.05
+    action[:3] = clipped_ac
+
+    obs, reward, _, info = super().step(action)
+    self.num_step += 1
+    done = True if self.num_step >= self.max_step else False
+    if done: info['TimeLimit.truncated'] = True
+
+    if self.mode == 1 and reward:
+      done = True
+
+    info['is_success'] = np.allclose(reward, self.mode)
+    return obs, reward, done, info
+
+  def reset(self):
+    obs = super().reset()
+    self.num_step = 0
+    return obs
+
 
 class EasyPickPlaceEnv(PickPlaceEnv):
   # make initialization easier
