@@ -676,6 +676,65 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
         'object1:joint': [1.3, 0.9, 0.41, 1., 0., 0., 0.],
     }
 
+    gripper_offset = np.array([-0.01, 0, 0.008])
+
+    """     g
+            2
+            1
+    """
+    final_goal_1 = np.array([1.33193233, 0.74910037, 0.48273329, -0.02 ,  0.02, 1.34193233, 0.74910037, 0.42473329, 1.34193233, 0.74910037, 0.47473329])
+    """     g
+            1
+            2
+    """
+    temp = np.copy(final_goal_1)
+    final_goal_2 = np.copy(final_goal_1)
+    final_goal_2[8:11] = final_goal_2[5:8]
+    final_goal_2[5:8] = temp[8:11]
+
+    obj0_init_pos = initial_qpos['object0:joint'][:3]
+    obj1_init_pos = initial_qpos['object1:joint'][:3]
+
+    """ g
+        0       1 
+    gripper over first block.
+    """
+    grip_pos = np.copy(obj0_init_pos) + gripper_offset
+    gripper_state = [-0.02, 0.02]
+    goal_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos]) 
+
+    """         g
+        0       1 
+    gripper over 2nd block.
+    """
+    grip_pos = np.copy(obj1_init_pos) + gripper_offset
+    gripper_state = [-0.02, 0.02]
+    goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos]) 
+
+    """    g    
+           0    
+                 1 
+    gripper pick first block.
+    """
+    obj0_lifted_pos = obj0_init_pos + np.array([0, 0, 0.05])
+    grip_pos = obj0_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    goal_3 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos]) 
+
+    """    g    
+           1    
+       0           
+    gripper pick second block.
+    """
+    obj1_lifted_pos = obj1_init_pos + np.array([0, 0, 0.05])
+    grip_pos = obj1_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    goal_4 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos]) 
+
+
+    self.all_goals = np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
+    self.goal_idx = -1
+
     fetch_env.FetchEnv.__init__(self,
                                 STACKXML.replace('#', '{}'.format(n)),
                                 has_object=True,
@@ -736,6 +795,9 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     for i in range(self.n):
       site_id = self.sim.model.site_name2id('target{}'.format(i))
       self.sim.model.site_pos[site_id] = goals[i] - sites_offset[i]
+    grip_pos = self.goal[:3]
+    site_id = self.sim.model.site_name2id('target2')
+    self.sim.model.site_pos[site_id] = grip_pos - sites_offset[i]
     self.sim.forward()
 
   def _reset_sim(self):
@@ -763,17 +825,29 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     self.sim.forward()
     return True
 
+  # def _sample_goal(self):
+  #   bottom_box = self.initial_gripper_xpos[:3] + self.np_random.uniform(-self.target_range, self.target_range, size=3)
+  #   bottom_box[2] = self.height_offset  #self.sim.data.get_joint_qpos('object0:joint')[:3]
+  #   gripper_state = np.array([-0.02, 0.02]) # Assume gripper state as open as possible
+  #   obj_pos = []
+  #   for i in range(self.n):
+  #     obj_pos.append(bottom_box + (np.array([0., 0., 0.05]) * i))
+  #   grip_pos = obj_pos[-1] + np.array([-0.01, 0., 0.008])
+  #   obj_pos = np.concatenate(obj_pos)
+  #   goal = np.concatenate([grip_pos, gripper_state, obj_pos])
+  #   return goal
+
+  def set_goal_idx(self, idx):
+    self.goal_idx = idx
+
+  def get_goal_idx(self):
+    return self.goal_idx
+
+  def get_goals(self):
+    return self.all_goals
+
   def _sample_goal(self):
-    bottom_box = self.initial_gripper_xpos[:3] + self.np_random.uniform(-self.target_range, self.target_range, size=3)
-    bottom_box[2] = self.height_offset  #self.sim.data.get_joint_qpos('object0:joint')[:3]
-    gripper_state = np.array([-0.02, 0.02]) # Assume gripper state as open as possible
-    obj_pos = []
-    for i in range(self.n):
-      obj_pos.append(bottom_box + (np.array([0., 0., 0.05]) * i))
-    grip_pos = obj_pos[-1] + np.array([-0.01, 0., 0.008])
-    obj_pos = np.concatenate(obj_pos)
-    goal = np.concatenate([grip_pos, gripper_state, obj_pos])
-    return goal
+    return self.all_goals[self.goal_idx]
 
   def step(self, action):
     # check if action is out of bounds
@@ -800,6 +874,19 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     obs = super().reset()
     self.num_step = 0
     return obs
+
+  def render(self, mode='human', width=100, height=100):
+      self._render_callback()
+      if mode == 'rgb_array':
+          return self.sim.render(height=100, width=100, camera_name="external_camera_0")[::-1]
+          # self._get_viewer(mode).render(width, height)
+          # # window size used for old mujoco-py:
+          # data = self._get_viewer(mode).read_pixels(width, height, depth=False)
+          # # original image is upside-down, so flip it
+          # return data[::-1, :, :]
+      elif mode == 'human':
+          self._get_viewer(mode).render()
+
 
 
 class EasyPickPlaceEnv(PickPlaceEnv):
