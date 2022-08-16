@@ -682,7 +682,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
             2
             1
     """
-    final_goal_1 = np.array([1.33193233, 0.74910037, 0.48273329, -0.02 ,  0.02, 1.34193233, 0.74910037, 0.42473329, 1.34193233, 0.74910037, 0.47473329])
+    final_goal_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.34193233, 0.74910037, 0.42473329, 1.34193233, 0.74910037, 0.47473329])
     """     g
             1
             2
@@ -700,7 +700,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     gripper over first block.
     """
     grip_pos = np.copy(obj0_init_pos) + gripper_offset
-    gripper_state = [-0.02, 0.02]
+    gripper_state = [0.03, 0.03]
     goal_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos]) 
 
     """         g
@@ -708,7 +708,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     gripper over 2nd block.
     """
     grip_pos = np.copy(obj1_init_pos) + gripper_offset
-    gripper_state = [-0.02, 0.02]
+    gripper_state = [0.03, 0.03]
     goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos]) 
 
     """    g    
