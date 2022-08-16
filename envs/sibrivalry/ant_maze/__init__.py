@@ -449,15 +449,21 @@ class AntMazeEnvFullDownscale(gym.GoalEnv):
     info = {}
     if self.eval:
       info = self.add_pertask_success(info, goal_idx=self.goal_idx)
+      # by default set it to false.
+      info[f"metric_success/goal_{self.goal_idx}"] = 0.0
     else:
       info = self.add_pertask_success(info, goal_idx=None)
+      for k,v in info.items():
+        if 'metric' in k:
+          info[k] = 0.0
     return info
 
 class AntHardMazeEnvFullDownscale(AntMazeEnvFullDownscale):
   def __init__(self, variant='AntHardMazeFullDownscale-SR', eval=False):
     super().__init__(variant=variant, eval=eval)
     self.goal_list = [[0.0, 4.2] for _ in range(4)]
-    self.goal_list.extend([[4.2, 8.2] for _ in range(4)])
+    # self.goal_list.extend([[4.2, 8.2] for _ in range(4)])
+    self.goal_list.extend([[0.0, 6.2] for _ in range(4)])
     other_dims = np.concatenate([[6.08193526e-01,  9.87496030e-01,
     1.82685311e-03, -6.82827458e-03,  1.57485326e-01,  5.14617396e-02,
     1.22386603e+00, -6.58701813e-02, -1.06980319e+00,  5.09069276e-01,
