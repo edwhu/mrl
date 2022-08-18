@@ -660,10 +660,12 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
                n=2,
                mode="-1/0",
                hard=False,
-               distance_threshold=0.03,):
+               distance_threshold=0.03,
+               eval=False):
     self.n = n
     self.hard = hard
     self.distance_threshold = distance_threshold
+    self.eval = eval
 
     self.workspace_min = np.array([1.25, 0.5, 0.42])
     self.workspace_max = np.array([1.6, 1.0, 0.6])
@@ -745,13 +747,13 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
                                 target_offset=0.0,
                                 obj_range=0.15,
                                 target_range=0.0,
-                                distance_threshold=0.05,
+                                distance_threshold=distance_threshold,
                                 initial_qpos=initial_qpos,
                                 reward_type='sparse')
 
     EzPickle.__init__(self)
 
-    self.max_step = max(50 * (n - 1), 50)
+    self.max_step = max_step
     self.num_step = 0
 
     self.mode = 0
@@ -760,8 +762,14 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
 
 
   def compute_reward(self, achieved_goal, goal, info):
-    ag_poses = np.array(np.split(achieved_goal[5:], self.n))
-    goal_poses = np.array(np.split(goal[5:], self.n))
+    ag_poses = np.split(achieved_goal[5:], self.n)
+    ag_poses.append(achieved_goal[:3])
+    ag_poses = np.array(ag_poses)
+
+    goal_poses = np.split(goal[5:], self.n)
+    goal_poses.append(goal[:3])
+    goal_poses = np.array(goal_poses)
+
     dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=1)
     succ_per_obj = dist_per_obj < self.distance_threshold
     all_succ = np.all(succ_per_obj).astype(np.float32)
@@ -797,7 +805,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
       self.sim.model.site_pos[site_id] = goals[i] - sites_offset[i]
     grip_pos = self.goal[:3]
     site_id = self.sim.model.site_name2id('target2')
-    self.sim.model.site_pos[site_id] = grip_pos - sites_offset[i]
+    self.sim.model.site_pos[site_id] = grip_pos - sites_offset[site_id]
     self.sim.forward()
 
   def _reset_sim(self):
@@ -846,6 +854,10 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
   def get_goals(self):
     return self.all_goals
 
+  def get_metrics_dict(self):
+    info = {"is_success": float(False)}
+    return info
+
   def _sample_goal(self):
     return self.all_goals[self.goal_idx]
 
@@ -861,14 +873,45 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
 
     obs, reward, _, info = super().step(action)
     self.num_step += 1
-    done = True if self.num_step >= self.max_step else False
+
+    if self.eval:
+      done = np.allclose(0., reward)
+      # info['is_success'] = done
+      info = self.add_pertask_success(info, obs['observation'], goal_idx=self.goal_idx)
+    else:
+      done = False
+      # info['is_success'] = np.allclose(0., reward)
+      info = self.add_pertask_success(info, obs['observation'], goal_idx=None)
+
+    done = True if self.num_step >= self.max_step else done
     if done: info['TimeLimit.truncated'] = True
 
-    if self.mode == 1 and reward:
-      done = True
-
-    info['is_success'] = np.allclose(reward, self.mode)
     return obs, reward, done, info
+
+  def add_pertask_success(self, info, obs, goal_idx = None):
+    goal_idxs = [goal_idx] if goal_idx is not None else range(len(self.all_goals))
+    for goal_idx in goal_idxs:
+      g = self.all_goals[goal_idx]
+      # compute normal success - if we reach within 0.15
+      reward = self.compute_reward(obs, g, info)
+      # -1 if not close, 0 if close.
+      # map to 0 if not close, 1 if close.
+      info[f"metric_success/goal_{goal_idx}"] = reward + 1
+    return info
+
+  def get_metrics_dict(self):
+    info = {}
+    dummy_obs = np.ones(self.observation_space['achieved_goal'].shape)
+    if self.eval:
+      info = self.add_pertask_success(info, dummy_obs, goal_idx=self.goal_idx)
+      # by default set it to false.
+      info[f"metric_success/goal_{self.goal_idx}"] = 0.0
+    else:
+      info = self.add_pertask_success(info, dummy_obs, goal_idx=None)
+      for k,v in info.items():
+        if 'metric' in k:
+          info[k] = 0.0
+    return info
 
   def reset(self):
     obs = super().reset()
