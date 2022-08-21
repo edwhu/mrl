@@ -883,6 +883,11 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
       # info['is_success'] = np.allclose(0., reward)
       info = self.add_pertask_success(info, obs['observation'], goal_idx=None)
 
+    all_obj_poses = np.split(obs['observation'][5:], self.n)
+    z_threshold = 0.5
+    for idx, obj_pos in enumerate(all_obj_poses):
+      info[f"metric_obj{idx}_above_{z_threshold:.2f}"] = float(obj_pos[2] > z_threshold)
+
     done = True if self.num_step >= self.max_step else done
     if done: info['TimeLimit.truncated'] = True
 
@@ -911,6 +916,9 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
       for k,v in info.items():
         if 'metric' in k:
           info[k] = 0.0
+    z_threshold = 0.5
+    for idx in range(self.n):
+      info[f"metric_obj{idx}_above_{z_threshold:.2f}"] = 0.0
     return info
 
   def reset(self):
