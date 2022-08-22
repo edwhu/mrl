@@ -65,7 +65,7 @@ def compute_reward(achieved_goal, goal, internal_goal, distance_threshold, per_d
     else:
       d = goal_distance(achieved_goal[:, :3], goal[:, :3])
   elif internal_goal == GoalType.ALL:
-    d = goal_distance(achieved_goal, goal)  
+    d = goal_distance(achieved_goal, goal)
   else:
     raise
 
@@ -620,7 +620,7 @@ class PickPlaceEnv(FetchPickAndPlaceEnv):
     if self.internal_goal == GoalType.ALL:
       site_id = self.sim.model.site_name2id('target1')
       grip_goal = self.goal[3:6]
-      self.sim.model.site_pos[site_id] = grip_goal - sites_offset[0] 
+      self.sim.model.site_pos[site_id] = grip_goal - sites_offset[0]
     self.sim.forward()
 
   def _get_obs(self):
@@ -661,23 +661,52 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
                mode="-1/0",
                hard=False,
                distance_threshold=0.03,
-               eval=False):
+               eval=False,
+               xml=STACKXML,
+               workspace_min=np.array([1.25, 0.5, 0.42]),
+               workspace_max=np.array([1.6, 1.0, 0.6])):
     self.n = n
     self.hard = hard
     self.distance_threshold = distance_threshold
     self.eval = eval
 
-    self.workspace_min = np.array([1.25, 0.5, 0.42])
-    self.workspace_max = np.array([1.6, 1.0, 0.6])
+    self.workspace_min = workspace_min
+    self.workspace_max = workspace_max
 
-    self.initial_qpos = initial_qpos = {
+    self.initial_qpos = {
         'robot0:slide0': 0.405,
         'robot0:slide1': 0.48,
         'robot0:slide2': 0.0,
         'object0:joint': [1.3, 0.6, 0.41, 1., 0., 0., 0.],
         'object1:joint': [1.3, 0.9, 0.41, 1., 0., 0., 0.],
     }
+    self.all_goals = self._create_goals()
+    self.goal_idx = -1
 
+    fetch_env.FetchEnv.__init__(self,
+                                xml.replace('#', '{}'.format(n)),
+                                has_object=True,
+                                block_gripper=False,
+                                n_substeps=20,
+                                gripper_extra_height=0.2,
+                                target_in_the_air=False,
+                                target_offset=0.0,
+                                obj_range=0.15,
+                                target_range=0.0,
+                                distance_threshold=distance_threshold,
+                                initial_qpos=self.initial_qpos,
+                                reward_type='sparse')
+
+    EzPickle.__init__(self)
+
+    self.max_step = max_step
+    self.num_step = 0
+
+    self.mode = 0
+    if mode == "0/1" or mode == 1:
+      self.mode = 1
+
+  def _create_goals(self):
     gripper_offset = np.array([-0.01, 0, 0.008])
 
     """     g
@@ -694,71 +723,47 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     final_goal_2[8:11] = final_goal_2[5:8]
     final_goal_2[5:8] = temp[8:11]
 
-    obj0_init_pos = initial_qpos['object0:joint'][:3]
-    obj1_init_pos = initial_qpos['object1:joint'][:3]
+    obj0_init_pos = self.initial_qpos['object0:joint'][:3]
+    obj1_init_pos = self.initial_qpos['object1:joint'][:3]
 
     """ g
-        0       1 
+        0       1
     gripper over first block.
     """
     grip_pos = np.copy(obj0_init_pos) + gripper_offset
     gripper_state = [0.03, 0.03]
-    goal_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos]) 
+    goal_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
 
     """         g
-        0       1 
+        0       1
     gripper over 2nd block.
     """
     grip_pos = np.copy(obj1_init_pos) + gripper_offset
     gripper_state = [0.03, 0.03]
-    goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos]) 
+    goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
 
-    """    g    
-           0    
-                 1 
+    """    g
+           0
+                 1
     gripper pick first block.
     """
     obj0_lifted_pos = obj0_init_pos + np.array([0, 0, 0.05])
     grip_pos = obj0_lifted_pos + gripper_offset
     gripper_state = [0.0, 0.0]
-    goal_3 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos]) 
+    goal_3 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos])
 
-    """    g    
-           1    
-       0           
+    """    g
+           1
+       0
     gripper pick second block.
     """
     obj1_lifted_pos = obj1_init_pos + np.array([0, 0, 0.05])
     grip_pos = obj1_lifted_pos + gripper_offset
     gripper_state = [0.0, 0.0]
-    goal_4 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos]) 
+    goal_4 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos])
 
 
-    self.all_goals = np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
-    self.goal_idx = -1
-
-    fetch_env.FetchEnv.__init__(self,
-                                STACKXML.replace('#', '{}'.format(n)),
-                                has_object=True,
-                                block_gripper=False,
-                                n_substeps=20,
-                                gripper_extra_height=0.2,
-                                target_in_the_air=False,
-                                target_offset=0.0,
-                                obj_range=0.15,
-                                target_range=0.0,
-                                distance_threshold=distance_threshold,
-                                initial_qpos=initial_qpos,
-                                reward_type='sparse')
-
-    EzPickle.__init__(self)
-
-    self.max_step = max_step
-    self.num_step = 0
-
-    self.mode = 0
-    if mode == "0/1" or mode == 1:
-      self.mode = 1
+    return np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
 
 
   def compute_reward(self, achieved_goal, goal, info):
@@ -802,7 +807,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     goals = np.split(self.goal[5:], self.n)
     for i in range(self.n):
       site_id = self.sim.model.site_name2id('target{}'.format(i))
-      self.sim.model.site_pos[site_id] = goals[i] - sites_offset[i]
+      self.sim.model.site_pos[site_id] = goals[i] - sites_offset[site_id]
     grip_pos = self.goal[:3]
     site_id = self.sim.model.site_name2id('target2')
     self.sim.model.site_pos[site_id] = grip_pos - sites_offset[site_id]
@@ -938,6 +943,29 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
       elif mode == 'human':
           self._get_viewer(mode).render()
 
+class WallsDemoStackEnv(DemoStackEnv):
+  def __init__(self,
+               max_step=50,
+               n=2,
+               mode="-1/0",
+               hard=False,
+               distance_threshold=0.03,
+               eval=False):
+    xml = os.path.join(dir_path, 'xmls', 'FetchStack#Walls.xml')
+    workspace_min=np.array([1.25, 0.5, 0.42])
+    workspace_max=np.array([1.5, 1.0, 0.6])
+    super().__init__(
+      max_step=max_step,
+      n=n,
+      mode=mode,
+      hard=hard,
+      distance_threshold=distance_threshold,
+      eval=eval,
+      xml=xml,
+      workspace_min=workspace_min,
+      workspace_max=workspace_max,
+    )
+
 
 
 class EasyPickPlaceEnv(PickPlaceEnv):
@@ -998,7 +1026,7 @@ class EasyPickPlaceEnv(PickPlaceEnv):
 
       self.sim.forward()
       return True
-  
+
   def set_goal_idx(self, idx):
     self.goal_idx = idx
 
@@ -1009,7 +1037,7 @@ class EasyPickPlaceEnv(PickPlaceEnv):
     # push left
     # push right
     # pick place to directly above spawn, easy.
-    # pick place to somewhere further away. 
+    # pick place to somewhere further away.
     return self.all_goals
 
   def _sample_goal(self):
@@ -1445,8 +1473,8 @@ class DisentangledFetchPushEnv(FetchPushEnv):
 
     achieved_goal = np.squeeze(object_pos.copy())
     obs = np.concatenate([
-        grip_pos, gripper_state, grip_velp, gripper_vel, 
-        object_pos.ravel(), object_rot.ravel(), object_velp.ravel(), object_velr.ravel(), 
+        grip_pos, gripper_state, grip_velp, gripper_vel,
+        object_pos.ravel(), object_rot.ravel(), object_velp.ravel(), object_velr.ravel(),
     ])
 
     return {
@@ -1689,7 +1717,7 @@ class SlideNEnv(fetch_env.FetchEnv, EzPickle):
       self.initial_gripper_xpos = self.sim.data.get_site_xpos('robot0:grip').copy()
       if self.has_object:
           self.height_offset = self.sim.data.get_site_xpos('object0')[2]
-          
+
   def step(self, action):
     obs, reward, _, info = super().step(action)
     self.num_step += 1
@@ -1725,7 +1753,7 @@ class SlideNEnv(fetch_env.FetchEnv, EzPickle):
       d = goal_distance(b, g)
       success *= (d <= self.distance_threshold).astype(np.float32)
 
-    return success - 1.  
+    return success - 1.
 
   def _get_obs(self):
     # positions
@@ -1883,7 +1911,7 @@ class PushNEnv(fetch_env.FetchEnv, EzPickle):
       self.initial_gripper_xpos = self.sim.data.get_site_xpos('robot0:grip').copy()
       if self.has_object:
           self.height_offset = self.sim.data.get_site_xpos('object0')[2]
-          
+
   def step(self, action):
     obs, reward, _, info = super().step(action)
     self.num_step += 1
@@ -1919,7 +1947,7 @@ class PushNEnv(fetch_env.FetchEnv, EzPickle):
       d = goal_distance(b, g)
       success *= (d <= self.distance_threshold).astype(np.float32)
 
-    return success - 1.  
+    return success - 1.
 
   def _get_obs(self):
     # positions
