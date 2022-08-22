@@ -945,7 +945,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
 
 class WallsDemoStackEnv(DemoStackEnv):
   def __init__(self,
-               max_step=50,
+               max_step=100,
                n=2,
                mode="-1/0",
                hard=False,
@@ -965,6 +965,65 @@ class WallsDemoStackEnv(DemoStackEnv):
       workspace_min=workspace_min,
       workspace_max=workspace_max,
     )
+  def _create_goals(self):
+    gripper_offset = np.array([-0.01, 0, 0.008])
+
+    """     g
+            2
+            1
+    """
+    final_goal_1 = np.array([1.30193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.30193233, 0.74910037, 0.42473329, 1.30193233, 0.74910037, 0.47473329])
+    """     g
+            1
+            2
+    """
+    temp = np.copy(final_goal_1)
+    final_goal_2 = np.copy(final_goal_1)
+    final_goal_2[8:11] = final_goal_2[5:8]
+    final_goal_2[5:8] = temp[8:11]
+
+    obj0_init_pos = self.initial_qpos['object0:joint'][:3]
+    obj1_init_pos = self.initial_qpos['object1:joint'][:3]
+    obj0_init_pos[2] = obj1_init_pos[2] = 0.425
+
+    """ g
+        0       1
+    gripper over first block.
+    """
+    grip_pos = np.copy(obj0_init_pos) + gripper_offset
+    gripper_state = [0.03, 0.03]
+    goal_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+
+    """         g
+        0       1
+    gripper over 2nd block.
+    """
+    grip_pos = np.copy(obj1_init_pos) + gripper_offset
+    gripper_state = [0.03, 0.03]
+    goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+
+    """    g
+           0
+                 1
+    gripper pick first block.
+    """
+    obj0_lifted_pos = obj0_init_pos + np.array([0, 0, 0.1])
+    grip_pos = obj0_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    goal_3 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos])
+
+    """    g
+           1
+       0
+    gripper pick second block.
+    """
+    obj1_lifted_pos = obj1_init_pos + np.array([0, 0, 0.1])
+    grip_pos = obj1_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    goal_4 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos])
+
+
+    return np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
 
 
 
