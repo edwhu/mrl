@@ -1037,7 +1037,7 @@ class WallsDemoStackEnv(DemoStackEnv):
     return np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
-  def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.03):
+  def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
     """
     0/1: +- x
     2/3: +- y
@@ -1079,7 +1079,6 @@ class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
     
     gripper_value = -1 if self._close_gripper else 1
     action = np.array([*pos_delta, gripper_value], dtype=np.float32)
-    print(action)
     ###### DemoStackEnv start ######
     action = action.copy()
     curr_eef_state = self.sim.data.get_site_xpos('robot0:grip')
