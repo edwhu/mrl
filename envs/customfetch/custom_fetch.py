@@ -11,6 +11,8 @@ from sklearn.metrics.pairwise import euclidean_distances
 from scipy.linalg import block_diag
 
 from gym.envs.robotics import rotations, utils
+from gym import spaces
+
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 STACKXML = os.path.join(dir_path, 'xmls', 'FetchStack#.xml')
@@ -1025,6 +1027,75 @@ class WallsDemoStackEnv(DemoStackEnv):
 
     return np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
 
+class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
+  def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.03):
+    """
+    0/1: +- x
+    2/3: +- y
+    4/5: +- z
+    6: toggle gripper
+    """
+    self._increment = increment
+    super().__init__(max_step, n, mode, hard, distance_threshold, eval)
+    self._close_gripper = False
+    self.cont_action_space = self.action_space
+    self.action_space = spaces.Discrete(7)
+  
+  def reset(self):
+    self._close_gripper = False
+    return super().reset()
+
+  def step(self, disc_action):
+    if disc_action < 6:
+      pos_delta = [[-1, 0, 0], [1, 0, 0], [0, -1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1]][disc_action]
+    elif action == 6:
+      self._close_gripper = not self._close_gripper
+    
+    gripper_value = 1 if self._close_gripper else -1
+    action = np.array([*pos_delta, gripper_value], dtype=np.float32)
+
+    ###### DemoStackEnv start ######
+    action = action.copy()
+    curr_eef_state = self.sim.data.get_site_xpos('robot0:grip')
+    next_eef_state = curr_eef_state + (action[:3] * self._increment)
+
+    next_eef_state = np.clip(next_eef_state, self.workspace_min, self.workspace_max)
+    clipped_ac = (next_eef_state - curr_eef_state) / self._increment
+    action[:3] = clipped_ac
+
+    ### robot env step
+    action = np.clip(action, self.cont_action_space.low, self.cont_action_space.high)
+    self._set_action(action)
+    self.sim.step()
+    self._step_callback()
+    obs = self._get_obs()
+
+    done = False
+    info = {
+        'is_success': self._is_success(obs['achieved_goal'], self.goal),
+    }
+    reward = self.compute_reward(obs['achieved_goal'], self.goal, info)
+    #### end robot env step #########
+    self.num_step += 1
+
+    if self.eval:
+      done = np.allclose(0., reward)
+      # info['is_success'] = done
+      info = self.add_pertask_success(info, obs['observation'], goal_idx=self.goal_idx)
+    else:
+      done = False
+      # info['is_success'] = np.allclose(0., reward)
+      info = self.add_pertask_success(info, obs['observation'], goal_idx=None)
+
+    all_obj_poses = np.split(obs['observation'][5:], self.n)
+    z_threshold = 0.5
+    for idx, obj_pos in enumerate(all_obj_poses):
+      info[f"metric_obj{idx}_above_{z_threshold:.2f}"] = float(obj_pos[2] > z_threshold)
+
+    done = True if self.num_step >= self.max_step else done
+    if done: info['TimeLimit.truncated'] = True
+    ########## End DemoStackEnv step ############
+    return obs, reward, done, info
 
 
 class EasyPickPlaceEnv(PickPlaceEnv):
