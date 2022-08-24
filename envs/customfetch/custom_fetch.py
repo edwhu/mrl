@@ -1046,9 +1046,10 @@ class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
     return super().reset()
 
   def step(self, disc_action):
+    pos_delta = [0, 0, 0]
     if disc_action < 6:
       pos_delta = [[-1, 0, 0], [1, 0, 0], [0, -1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1]][disc_action]
-    elif action == 6:
+    elif disc_action == 6:
       self._close_gripper = not self._close_gripper
     
     gripper_value = 1 if self._close_gripper else -1
