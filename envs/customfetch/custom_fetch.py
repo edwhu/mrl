@@ -665,23 +665,30 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
                distance_threshold=0.03,
                eval=False,
                xml=STACKXML,
-               workspace_min=np.array([1.25, 0.5, 0.42]),
-               workspace_max=np.array([1.6, 1.0, 0.6])):
+               workspace_min=None,
+               workspace_max=None,
+               initial_qpos=None):
     self.n = n
     self.hard = hard
     self.distance_threshold = distance_threshold
     self.eval = eval
+    if workspace_min is None:
+      workspace_min=np.array([1.25, 0.5, 0.42])
+    if workspace_max is None:
+      workspace_max=np.array([1.6, 1.0, 0.6])
 
     self.workspace_min = workspace_min
     self.workspace_max = workspace_max
+    if initial_qpos is None:
+      initial_qpos = {
+          'robot0:slide0': 0.405,
+          'robot0:slide1': 0.48,
+          'robot0:slide2': 0.0,
+          'object0:joint': [1.3, 0.6, 0.41, 1., 0., 0., 0.],
+          'object1:joint': [1.3, 0.9, 0.41, 1., 0., 0., 0.],
+      }
+    self.initial_qpos = initial_qpos
 
-    self.initial_qpos = {
-        'robot0:slide0': 0.405,
-        'robot0:slide1': 0.48,
-        'robot0:slide2': 0.0,
-        'object0:joint': [1.3, 0.6, 0.41, 1., 0., 0., 0.],
-        'object1:joint': [1.3, 0.9, 0.41, 1., 0., 0., 0.],
-    }
     self.all_goals = self._create_goals()
     self.goal_idx = -1
 
@@ -952,7 +959,8 @@ class WallsDemoStackEnv(DemoStackEnv):
                mode="-1/0",
                hard=False,
                distance_threshold=0.03,
-               eval=False):
+               eval=False,
+               initial_qpos=None):
     xml = os.path.join(dir_path, 'xmls', 'FetchStack#Walls.xml')
     workspace_min=np.array([1.25, 0.5, 0.42])
     workspace_max=np.array([1.5, 1.0, 0.6])
@@ -966,6 +974,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       xml=xml,
       workspace_min=workspace_min,
       workspace_max=workspace_max,
+      initial_qpos=initial_qpos
     )
   def _create_goals(self):
     gripper_offset = np.array([-0.01, 0, 0.008])
@@ -1036,25 +1045,41 @@ class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
     6: toggle gripper
     """
     self._increment = increment
-    super().__init__(max_step, n, mode, hard, distance_threshold, eval)
-    self._close_gripper = False
+    initial_qpos = {
+        'robot0:slide0': 0.405,
+        'robot0:slide1': 0.48,
+        'robot0:slide2': 0.0,
+        'object0:joint': [1.33, 0.6, 0.41, 1., 0., 0., 0.],
+        'object1:joint': [1.33, 0.9, 0.41, 1., 0., 0., 0.],
+    }
+    super().__init__(max_step, n, mode, hard, distance_threshold, eval, initial_qpos=initial_qpos)
+    self._close_gripper = True
     self.cont_action_space = self.action_space
     self.action_space = spaces.Discrete(7)
   
   def reset(self):
     self._close_gripper = False
-    return super().reset()
+    super().reset()
+    # open the gripper.
+    action = np.array([0, 0, 0, 1], dtype=np.float32)
+    self._set_action(action)
+    self.sim.step()
+    self._step_callback()
+    obs = self._get_obs()
+    return obs
 
   def step(self, disc_action):
     pos_delta = [0, 0, 0]
+    num_steps = 1
     if disc_action < 6:
       pos_delta = [[-1, 0, 0], [1, 0, 0], [0, -1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1]][disc_action]
     elif disc_action == 6:
       self._close_gripper = not self._close_gripper
+      num_steps = 2
     
-    gripper_value = 1 if self._close_gripper else -1
+    gripper_value = -1 if self._close_gripper else 1
     action = np.array([*pos_delta, gripper_value], dtype=np.float32)
-
+    print(action)
     ###### DemoStackEnv start ######
     action = action.copy()
     curr_eef_state = self.sim.data.get_site_xpos('robot0:grip')
@@ -1066,9 +1091,10 @@ class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
 
     ### robot env step
     action = np.clip(action, self.cont_action_space.low, self.cont_action_space.high)
-    self._set_action(action)
-    self.sim.step()
-    self._step_callback()
+    for _ in range(num_steps):
+      self._set_action(action)
+      self.sim.step()
+      self._step_callback()
     obs = self._get_obs()
 
     done = False
@@ -1097,6 +1123,65 @@ class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
     if done: info['TimeLimit.truncated'] = True
     ########## End DemoStackEnv step ############
     return obs, reward, done, info
+  def _create_goals(self):
+    gripper_offset = np.array([-0.01, 0, 0.008])
+
+    """     g
+            2
+            1
+    """
+    final_goal_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329])
+    """     g
+            1
+            2
+    """
+    temp = np.copy(final_goal_1)
+    final_goal_2 = np.copy(final_goal_1)
+    final_goal_2[8:11] = final_goal_2[5:8]
+    final_goal_2[5:8] = temp[8:11]
+
+    obj0_init_pos = self.initial_qpos['object0:joint'][:3]
+    obj1_init_pos = self.initial_qpos['object1:joint'][:3]
+    obj0_init_pos[2] = obj1_init_pos[2] = 0.425
+
+    """ g
+        0       1
+    gripper over first block.
+    """
+    grip_pos = np.copy(obj0_init_pos) + gripper_offset
+    gripper_state = [0.03, 0.03]
+    goal_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+
+    """         g
+        0       1
+    gripper over 2nd block.
+    """
+    grip_pos = np.copy(obj1_init_pos) + gripper_offset
+    gripper_state = [0.03, 0.03]
+    goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+
+    """    g
+           0
+                 1
+    gripper pick first block.
+    """
+    obj0_lifted_pos = obj0_init_pos + np.array([0, 0, 0.1])
+    grip_pos = obj0_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    goal_3 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos])
+
+    """    g
+           1
+       0
+    gripper pick second block.
+    """
+    obj1_lifted_pos = obj1_init_pos + np.array([0, 0, 0.1])
+    grip_pos = obj1_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    goal_4 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos])
+
+
+    return np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
 
 
 class EasyPickPlaceEnv(PickPlaceEnv):
