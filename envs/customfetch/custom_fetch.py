@@ -990,15 +990,15 @@ class WallsDemoStackEnv(DemoStackEnv):
             2
             1
     """
-    final_goal_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329])
+    hard_stack_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329])
     """     g
             1
             2
     """
-    temp = np.copy(final_goal_1)
-    final_goal_2 = np.copy(final_goal_1)
-    final_goal_2[8:11] = final_goal_2[5:8]
-    final_goal_2[5:8] = temp[8:11]
+    temp = np.copy(hard_stack_1)
+    hard_stack_2 = np.copy(hard_stack_1)
+    hard_stack_2[8:11] = hard_stack_2[5:8]
+    hard_stack_2[5:8] = temp[8:11]
 
     obj0_init_pos = self.initial_qpos['object0:joint'][:3]
     obj1_init_pos = self.initial_qpos['object1:joint'][:3]
@@ -1010,7 +1010,7 @@ class WallsDemoStackEnv(DemoStackEnv):
     """
     grip_pos = np.copy(obj0_init_pos) + gripper_offset
     gripper_state = [0.03, 0.03]
-    goal_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+    touch_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
 
     """         g
         0       1
@@ -1018,25 +1018,44 @@ class WallsDemoStackEnv(DemoStackEnv):
     """
     grip_pos = np.copy(obj1_init_pos) + gripper_offset
     gripper_state = [0.03, 0.03]
-    goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+    touch_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+    """    g
+           0
+                 1
+    gripper pick first block.
+    """
+    obj0_lifted_pos = obj0_init_pos + np.array([0, 0.05, 0.1])
+    grip_pos = obj0_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    pick_1 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos])
+
+    """    g
+           1
+       0
+    gripper pick second block.
+    """
+    obj1_lifted_pos = obj1_init_pos + np.array([0, -0.05, 0.1])
+    grip_pos = obj1_lifted_pos + gripper_offset
+    gripper_state = [0.0, 0.0]
+    pick_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos])
 
     """    g
            1
            0     
     stack on first block
     """
-    goal_3 = np.copy(final_goal_1)    
-    goal_3[[1,6,9]] = obj0_init_pos[1]
+    stack_1 = np.copy(hard_stack_1)    
+    stack_1[[1,6,9]] = obj0_init_pos[1]
 
     """    g
            0
            1
     stack on second block.
     """
-    goal_4 = np.copy(final_goal_2)
-    goal_4[[1,6,9]] = obj1_init_pos[1]
+    stack_2 = np.copy(hard_stack_2)
+    stack_2[[1,6,9]] = obj1_init_pos[1]
 
-    return np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
+    return np.stack([touch_1, touch_2, pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
