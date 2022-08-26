@@ -964,6 +964,13 @@ class WallsDemoStackEnv(DemoStackEnv):
     xml = os.path.join(dir_path, 'xmls', 'FetchStack#Walls.xml')
     workspace_min=np.array([1.25, 0.5, 0.42])
     workspace_max=np.array([1.5, 1.0, 0.6])
+    initial_qpos = {
+        'robot0:slide0': 0.405,
+        'robot0:slide1': 0.48,
+        'robot0:slide2': 0.0,
+        'object0:joint': [1.33, 0.6, 0.41, 1., 0., 0., 0.],
+        'object1:joint': [1.33, 0.9, 0.41, 1., 0., 0., 0.],
+    }
     super().__init__(
       max_step=max_step,
       n=n,
@@ -983,7 +990,7 @@ class WallsDemoStackEnv(DemoStackEnv):
             2
             1
     """
-    final_goal_1 = np.array([1.30193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.30193233, 0.74910037, 0.42473329, 1.30193233, 0.74910037, 0.47473329])
+    final_goal_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329])
     """     g
             1
             2
@@ -1014,25 +1021,20 @@ class WallsDemoStackEnv(DemoStackEnv):
     goal_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
 
     """    g
-           0
-                 1
-    gripper pick first block.
+           1
+           0     
+    stack on first block
     """
-    obj0_lifted_pos = obj0_init_pos + np.array([0, 0, 0.1])
-    grip_pos = obj0_lifted_pos + gripper_offset
-    gripper_state = [0.0, 0.0]
-    goal_3 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos])
+    goal_3 = np.copy(final_goal_1)    
+    goal_3[[1,6,9]] = obj0_init_pos[1]
 
     """    g
+           0
            1
-       0
-    gripper pick second block.
+    stack on second block.
     """
-    obj1_lifted_pos = obj1_init_pos + np.array([0, 0, 0.1])
-    grip_pos = obj1_lifted_pos + gripper_offset
-    gripper_state = [0.0, 0.0]
-    goal_4 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos])
-
+    goal_4 = np.copy(final_goal_2)
+    goal_4[[1,6,9]] = obj1_init_pos[1]
 
     return np.stack([goal_1, goal_2, goal_3, goal_4, final_goal_1, final_goal_2])
 
