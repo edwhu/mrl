@@ -962,14 +962,14 @@ class WallsDemoStackEnv(DemoStackEnv):
                eval=False,
                initial_qpos=None):
     xml = os.path.join(dir_path, 'xmls', 'FetchStack#Walls.xml')
-    workspace_min=np.array([1.25, 0.5, 0.42])
-    workspace_max=np.array([1.5, 1.0, 0.6])
+    workspace_min=np.array([1.25, 0.55, 0.42])
+    workspace_max=np.array([1.45, 0.95, 0.55])
     initial_qpos = {
         'robot0:slide0': 0.405,
         'robot0:slide1': 0.48,
         'robot0:slide2': 0.0,
-        'object0:joint': [1.33, 0.6, 0.41, 1., 0., 0., 0.],
-        'object1:joint': [1.33, 0.9, 0.41, 1., 0., 0., 0.],
+        'object0:joint': [1.33, 0.65, 0.41, 1., 0., 0., 0.],
+        'object1:joint': [1.33, 0.85, 0.41, 1., 0., 0., 0.],
     }
     super().__init__(
       max_step=max_step,
