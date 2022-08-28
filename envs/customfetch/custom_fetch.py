@@ -818,7 +818,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
       site_id = self.sim.model.site_name2id('target{}'.format(i))
       self.sim.model.site_pos[site_id] = goals[i] - sites_offset[site_id]
     grip_pos = self.goal[:3]
-    site_id = self.sim.model.site_name2id('target2')
+    site_id = self.sim.model.site_name2id('gripper_site')
     self.sim.model.site_pos[site_id] = grip_pos - sites_offset[site_id]
     self.sim.forward()
 
@@ -971,6 +971,10 @@ class WallsDemoStackEnv(DemoStackEnv):
         'object0:joint': [1.33, 0.65, 0.41, 1., 0., 0., 0.],
         'object1:joint': [1.33, 0.85, 0.41, 1., 0., 0., 0.],
     }
+    if n == 3:
+      initial_qpos['object2:joint']= [1.40, 0.75, 0.41, 1., 0., 0., 0.]
+      workspace_max=np.array([1.45, 0.95, 0.59])
+
     super().__init__(
       max_step=max_step,
       n=n,
@@ -985,77 +989,100 @@ class WallsDemoStackEnv(DemoStackEnv):
     )
   def _create_goals(self):
     gripper_offset = np.array([-0.01, 0, 0.008])
+    if self.n == 2:
 
-    """     g
-            2
+      """     g
+              2
+              1
+      """
+      hard_stack_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329])
+      """     g
+              1
+              2
+      """
+      temp = np.copy(hard_stack_1)
+      hard_stack_2 = np.copy(hard_stack_1)
+      hard_stack_2[8:11] = hard_stack_2[5:8]
+      hard_stack_2[5:8] = temp[8:11]
+
+      obj0_init_pos = self.initial_qpos['object0:joint'][:3]
+      obj1_init_pos = self.initial_qpos['object1:joint'][:3]
+      obj0_init_pos[2] = obj1_init_pos[2] = 0.425
+
+      """ g
+          0       1
+      gripper over first block.
+      """
+      grip_pos = np.copy(obj0_init_pos) + gripper_offset
+      gripper_state = [0.03, 0.03]
+      touch_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+
+      """         g
+          0       1
+      gripper over 2nd block.
+      """
+      grip_pos = np.copy(obj1_init_pos) + gripper_offset
+      gripper_state = [0.03, 0.03]
+      touch_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
+      """    g
+            0
+                  1
+      gripper pick first block.
+      """
+      obj0_lifted_pos = obj0_init_pos + np.array([0, 0.05, 0.1])
+      grip_pos = obj0_lifted_pos + gripper_offset
+      gripper_state = [0.0, 0.0]
+      pick_1 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos])
+
+      """    g
             1
-    """
-    hard_stack_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329])
-    """     g
+        0
+      gripper pick second block.
+      """
+      obj1_lifted_pos = obj1_init_pos + np.array([0, -0.05, 0.1])
+      grip_pos = obj1_lifted_pos + gripper_offset
+      gripper_state = [0.0, 0.0]
+      pick_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos])
+
+      """    g
             1
-            2
-    """
-    temp = np.copy(hard_stack_1)
-    hard_stack_2 = np.copy(hard_stack_1)
-    hard_stack_2[8:11] = hard_stack_2[5:8]
-    hard_stack_2[5:8] = temp[8:11]
+            0     
+      stack on first block
+      """
+      stack_1 = np.copy(hard_stack_1)    
+      stack_1[[1,6,9]] = obj0_init_pos[1]
 
-    obj0_init_pos = self.initial_qpos['object0:joint'][:3]
-    obj1_init_pos = self.initial_qpos['object1:joint'][:3]
-    obj0_init_pos[2] = obj1_init_pos[2] = 0.425
+      """    g
+            0
+            1
+      stack on second block.
+      """
+      stack_2 = np.copy(hard_stack_2)
+      stack_2[[1,6,9]] = obj1_init_pos[1]
+      return np.stack([touch_1, touch_2, pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
+    elif self.n == 3:
+      gripper_offset = np.array([-0.01, 0, 0.025])
+      example_stack = np.array([1.33193233, 0.74910037, 0.52473329 + 0.0008, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329, 1.33193233, 0.74910037, 0.52473329])
+      all_goals = []
+      from itertools import permutations
+      # from 1<=j<=N, generate N-j height stacks. 
+      for j in range(1,self.n):
+        # need to try all permutations of blocks.
+        for perm in permutations(range(self.n)):
+          perm = list(perm)
+          goal = np.copy(example_stack)
+          # first j blocks set to initial pos.
+          for i in range(j):
+            start = 5 + (3 * perm[i])
+            goal[start: start+3] = prev_pos = self.initial_qpos[f"object{perm[i]}:joint"][:3]
+          # remaining blocks set on top.
+          for i in range(j, self.n):
+            start = 5 + (3 * perm[i])
+            goal[start: start+3] = prev_pos = prev_pos + np.array([0,0,0.05])
+          goal[:3] = prev_pos + gripper_offset
+          all_goals.append(goal)
 
-    """ g
-        0       1
-    gripper over first block.
-    """
-    grip_pos = np.copy(obj0_init_pos) + gripper_offset
-    gripper_state = [0.03, 0.03]
-    touch_1 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
-
-    """         g
-        0       1
-    gripper over 2nd block.
-    """
-    grip_pos = np.copy(obj1_init_pos) + gripper_offset
-    gripper_state = [0.03, 0.03]
-    touch_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_init_pos])
-    """    g
-           0
-                 1
-    gripper pick first block.
-    """
-    obj0_lifted_pos = obj0_init_pos + np.array([0, 0.05, 0.1])
-    grip_pos = obj0_lifted_pos + gripper_offset
-    gripper_state = [0.0, 0.0]
-    pick_1 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos])
-
-    """    g
-           1
-       0
-    gripper pick second block.
-    """
-    obj1_lifted_pos = obj1_init_pos + np.array([0, -0.05, 0.1])
-    grip_pos = obj1_lifted_pos + gripper_offset
-    gripper_state = [0.0, 0.0]
-    pick_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos])
-
-    """    g
-           1
-           0     
-    stack on first block
-    """
-    stack_1 = np.copy(hard_stack_1)    
-    stack_1[[1,6,9]] = obj0_init_pos[1]
-
-    """    g
-           0
-           1
-    stack on second block.
-    """
-    stack_2 = np.copy(hard_stack_2)
-    stack_2[[1,6,9]] = obj1_init_pos[1]
-
-    return np.stack([touch_1, touch_2, pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
+      return np.stack(all_goals)
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
