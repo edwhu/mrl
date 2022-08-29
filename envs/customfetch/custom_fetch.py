@@ -968,11 +968,11 @@ class WallsDemoStackEnv(DemoStackEnv):
         'robot0:slide0': 0.405,
         'robot0:slide1': 0.48,
         'robot0:slide2': 0.0,
-        'object0:joint': [1.33, 0.65, 0.41, 1., 0., 0., 0.],
-        'object1:joint': [1.33, 0.85, 0.41, 1., 0., 0., 0.],
+        'object0:joint': [1.33, 0.65, 0.42, 1., 0., 0., 0.],
+        'object1:joint': [1.33, 0.85, 0.42, 1., 0., 0., 0.],
     }
     if n == 3:
-      initial_qpos['object2:joint']= [1.40, 0.75, 0.41, 1., 0., 0., 0.]
+      initial_qpos['object2:joint']= [1.40, 0.75, 0.42, 1., 0., 0., 0.]
       workspace_max=np.array([1.45, 0.95, 0.59])
 
     super().__init__(
@@ -1082,7 +1082,7 @@ class WallsDemoStackEnv(DemoStackEnv):
           goal[:3] = prev_pos + gripper_offset
           all_goals.append(goal)
 
-      return np.stack(all_goals)
+      return np.stack(all_goals[::-1])
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
