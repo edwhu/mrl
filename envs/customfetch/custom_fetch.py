@@ -972,7 +972,7 @@ class WallsDemoStackEnv(DemoStackEnv):
         'object1:joint': [1.33, 0.85, 0.42, 1., 0., 0., 0.],
     }
     if n == 3:
-      initial_qpos['object2:joint']= [1.40, 0.75, 0.42, 1., 0., 0., 0.]
+      initial_qpos['object2:joint']= [1.42, 0.75, 0.42, 1., 0., 0., 0.]
       workspace_max=np.array([1.45, 0.95, 0.59])
 
     super().__init__(

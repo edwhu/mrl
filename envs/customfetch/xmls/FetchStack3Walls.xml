@@ -31,7 +31,7 @@
 			<geom size="0.02 0.25 0.15" type="box" mass="20" rgba="1 1 0 0.05"></geom>
 		</body>
 		<body pos="1.5 0.75 0.45" name="front_wall">
-			<geom size="0.02 0.25 0.15" type="box" mass="20" rgba="1 1 0 0.05"></geom>
+			<geom size="0.02 0.25 0.15" type="box" mass="20" rgba="1 1 0 0.0"></geom>
 		</body>
 		<body name="object0" pos="0.025 0.025 0.025">
 			<joint name="object0:joint" type="free" damping="0.01"></joint>
