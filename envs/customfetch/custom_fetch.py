@@ -1089,7 +1089,9 @@ class WallsDemoStackEnv(DemoStackEnv):
 
       all_goals = np.stack(all_goals)
 
-      stack_goals = []
+      top_stack_goals = []
+      start_stack_goals = []
+      remaining_stack_goals = []
       # from 1<=j<=N, generate N-j height stacks.
       from itertools import permutations
       for j in range(1,self.n):
@@ -1111,21 +1113,24 @@ class WallsDemoStackEnv(DemoStackEnv):
             intermediate_goal = np.copy(goal)
             start = 5 + (3 * perm[0])
             intermediate_goal[:3] = goal[start: start+3] + np.array([-0.01, 0, 0.008])
-            stack_goals.append(intermediate_goal)
+            remaining_stack_goals.append(intermediate_goal)
 
           # put gripper on top block.
           intermediate_goal = np.copy(goal)
           intermediate_goal[:3] = prev_pos + np.array([-0.01, 0, 0.008])
-          stack_goals.append(intermediate_goal)
+          top_stack_goals.append(intermediate_goal)
 
           # put gripper to start.
           end_goal = np.copy(goal)
           end_goal[:3] = [1.34193271, 0.74910037, 0.53472273] # move to start
-          stack_goals.append(end_goal)
+          start_stack_goals.append(end_goal)
 
-      stack_goals = np.stack(stack_goals[::-1])
+      start_stack_goals = np.stack(start_stack_goals[::-1])
+      top_stack_goals = np.stack(top_stack_goals[::-1])
+      remaining_stack_goals = np.stack(remaining_stack_goals[::-1])
+      import ipdb; ipdb.set_trace()
 
-      return np.concatenate([all_goals, stack_goals])
+      return np.concatenate([all_goals, remaining_stack_goals, top_stack_goals, start_stack_goals])
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
