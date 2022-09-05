@@ -1046,10 +1046,10 @@ class WallsDemoStackEnv(DemoStackEnv):
 
       """    g
             1
-            0     
+            0
       stack on first block
       """
-      stack_1 = np.copy(hard_stack_1)    
+      stack_1 = np.copy(hard_stack_1)
       stack_1[[1,6,9]] = obj0_init_pos[1]
 
       """    g
@@ -1064,8 +1064,34 @@ class WallsDemoStackEnv(DemoStackEnv):
       gripper_offset = np.array([-0.01, 0, 0.025])
       example_stack = np.array([1.33193233, 0.74910037, 0.52473329 + 0.0008, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329, 1.33193233, 0.74910037, 0.52473329])
       all_goals = []
+      # create reaching goals
+      for i in range(self.n):
+        # reaching goal, reach i-th block
+        goal = np.copy(example_stack)
+        for j in range(3):
+          start = 5 + (3 * j)
+          goal[start: start+3] = self.initial_qpos[f"object{j}:joint"][:3]
+        start = 5 + (3*i)
+        goal[:3] = goal[start: start+3] + gripper_offset # place hand over i-th obj
+        all_goals.append(goal)
+
+      # create picking goals
+      for i in range(self.n):
+        # reaching goal, reach i-th block
+        goal = np.copy(example_stack)
+        for j in range(3):
+          start = 5 + (3 * j)
+          goal[start: start+3] = self.initial_qpos[f"object{j}:joint"][:3]
+        start = 5 + (3*i)
+        goal[start: start+3] = [1.34193271, 0.74910037, 0.53472273] # pick object to start.
+        goal[:3] = goal[start: start+3] + np.array([-0.01, 0, 0.008]) # pick over i-th obj
+        all_goals.append(goal)
+
+      all_goals = np.stack(all_goals)
+
+      stack_goals = []
+      # from 1<=j<=N, generate N-j height stacks.
       from itertools import permutations
-      # from 1<=j<=N, generate N-j height stacks. 
       for j in range(1,self.n):
         # need to try all permutations of blocks.
         for perm in permutations(range(self.n)):
@@ -1079,11 +1105,27 @@ class WallsDemoStackEnv(DemoStackEnv):
           for i in range(j, self.n):
             start = 5 + (3 * perm[i])
             goal[start: start+3] = prev_pos = prev_pos + np.array([0,0,0.05])
-          # goal[:3] = prev_pos + gripper_offset
-          goal[:3] = [1.34193271, 0.74910037, 0.53472273] # move to start
-          all_goals.append(goal)
 
-      return np.stack(all_goals[::-1])
+          # put gripper on remaining block. (only for 2-height tower case.)
+          if j == 2:
+            intermediate_goal = np.copy(goal)
+            start = 5 + (3 * perm[0])
+            intermediate_goal[:3] = goal[start: start+3] + np.array([-0.01, 0, 0.008])
+            stack_goals.append(intermediate_goal)
+
+          # put gripper on top block.
+          intermediate_goal = np.copy(goal)
+          intermediate_goal[:3] = prev_pos + np.array([-0.01, 0, 0.008])
+          stack_goals.append(intermediate_goal)
+
+          # put gripper to start.
+          end_goal = np.copy(goal)
+          end_goal[:3] = [1.34193271, 0.74910037, 0.53472273] # move to start
+          stack_goals.append(end_goal)
+
+      stack_goals = np.stack(stack_goals[::-1])
+
+      return np.concatenate([all_goals, stack_goals])
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
@@ -1105,7 +1147,7 @@ class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
     self._close_gripper = True
     self.cont_action_space = self.action_space
     self.action_space = spaces.Discrete(7)
-  
+
   def reset(self):
     self._close_gripper = False
     super().reset()
@@ -1125,7 +1167,7 @@ class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
     elif disc_action == 6:
       self._close_gripper = not self._close_gripper
       num_steps = 2
-    
+
     gripper_value = -1 if self._close_gripper else 1
     action = np.array([*pos_delta, gripper_value], dtype=np.float32)
     ###### DemoStackEnv start ######
