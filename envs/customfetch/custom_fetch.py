@@ -1079,7 +1079,8 @@ class WallsDemoStackEnv(DemoStackEnv):
           for i in range(j, self.n):
             start = 5 + (3 * perm[i])
             goal[start: start+3] = prev_pos = prev_pos + np.array([0,0,0.05])
-          goal[:3] = prev_pos + gripper_offset
+          # goal[:3] = prev_pos + gripper_offset
+          goal[:3] = [1.34193271, 0.74910037, 0.53472273] # move to start
           all_goals.append(goal)
 
       return np.stack(all_goals[::-1])
