@@ -1128,7 +1128,6 @@ class WallsDemoStackEnv(DemoStackEnv):
       start_stack_goals = np.stack(start_stack_goals[::-1])
       top_stack_goals = np.stack(top_stack_goals[::-1])
       remaining_stack_goals = np.stack(remaining_stack_goals[::-1])
-      import ipdb; ipdb.set_trace()
 
       return np.concatenate([all_goals, remaining_stack_goals, top_stack_goals, start_stack_goals])
 
