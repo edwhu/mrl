@@ -972,8 +972,12 @@ class WallsDemoStackEnv(DemoStackEnv):
         'object1:joint': [1.33, 0.85, 0.42, 1., 0., 0., 0.],
     }
     if n == 3:
-      initial_qpos['object2:joint']= [1.42, 0.75, 0.42, 1., 0., 0., 0.]
-      workspace_max=np.array([1.45, 0.95, 0.59])
+      # initial_qpos['object2:joint']= [1.42, 0.75, 0.42, 1., 0., 0., 0.]
+      # workspace_max=np.array([1.45, 0.95, 0.59])
+      # 2D version
+      initial_qpos['object2:joint']= [1.33, 0.75, 0.42, 1., 0., 0., 0.]
+      workspace_min=np.array([1.30, 0.64, 0.42])
+      workspace_max=np.array([1.36, 0.86, 0.59])
 
     super().__init__(
       max_step=max_step,
@@ -1061,20 +1065,6 @@ class WallsDemoStackEnv(DemoStackEnv):
       stack_2[[1,6,9]] = obj1_init_pos[1]
       return np.stack([touch_1, touch_2, pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
     elif self.n == 3:
-      """     g
-              2
-              1
-      """
-      hard_stack_1 = np.array([1.33193233, 0.74910037, 0.48273329, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329, 1.42, 0.74910037, 0.425])
-      """     g
-              1
-              2
-      """
-      temp = np.copy(hard_stack_1)
-      hard_stack_2 = np.copy(hard_stack_1)
-      hard_stack_2[8:11] = hard_stack_2[5:8]
-      hard_stack_2[5:8] = temp[8:11]
-
       obj0_init_pos = self.initial_qpos['object0:joint'][:3]
       obj1_init_pos = self.initial_qpos['object1:joint'][:3]
       obj2_init_pos = self.initial_qpos['object2:joint'][:3]
@@ -1106,7 +1096,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       pick_1 = np.concatenate([grip_pos, gripper_state, obj0_lifted_pos, obj1_init_pos, obj2_init_pos])
 
       """    g
-            1
+             1
         0
       gripper pick second block.
       """
@@ -1115,22 +1105,21 @@ class WallsDemoStackEnv(DemoStackEnv):
       gripper_state = [0.0, 0.0]
       pick_2 = np.concatenate([grip_pos, gripper_state, obj0_init_pos, obj1_lifted_pos, obj2_init_pos])
 
-      """    g
-            1
-            0
-      stack on first block
+      """g
+         1
+         0
+         2
       """
-      stack_1 = np.copy(hard_stack_1)
-      stack_1[[1,6,9]] = obj0_init_pos[1]
+      obj0_pos = np.copy(obj2_init_pos)
+      obj0_pos[2] += 0.05
+      obj1_pos = np.copy(obj0_pos)
+      obj1_pos[2] += 0.05
+      grip_pos = np.copy(obj1_pos) + gripper_offset
+      gripper_state = [0.0, 0.0]
+      final_stack_1 = np.concatenate([grip_pos, gripper_state, obj0_pos, obj1_pos, obj2_init_pos])
 
-      """    g
-            0
-            1
-      stack on second block.
-      """
-      stack_2 = np.copy(hard_stack_2)
-      stack_2[[1,6,9]] = obj1_init_pos[1]
-      return np.stack([touch_1, touch_2, pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
+
+      return np.stack([touch_1, touch_2, pick_1, pick_2, final_stack_1])
       # gripper_offset = np.array([-0.01, 0, 0.025])
       # example_stack = np.array([1.33193233, 0.74910037, 0.52473329 + 0.0008, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329, 1.33193233, 0.74910037, 0.52473329])
       # all_goals = []
