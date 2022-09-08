@@ -1122,7 +1122,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       final_stack_1 = np.concatenate([grip_pos, gripper_state, obj0_pos, obj1_pos, obj2_pos])
 
       harder_final_stack = np.copy(final_stack_1)
-      harder_final_stack[:3] = [1.30, 0.65, 0.55]
+      harder_final_stack[:3] = [1.33, 0.75, 0.59]
 
 
       return np.stack([touch_2,  pick_2, final_stack_1, harder_final_stack])
