@@ -975,9 +975,9 @@ class WallsDemoStackEnv(DemoStackEnv):
       # initial_qpos['object2:joint']= [1.42, 0.75, 0.42, 1., 0., 0., 0.]
       # workspace_max=np.array([1.45, 0.95, 0.59])
       # 2D version
-      initial_qpos['object2:joint']= [1.4, 0.75, 0.42, 1., 0., 0., 0.]
+      initial_qpos['object2:joint']= [1.33, 0.75, 0.42, 1., 0., 0., 0.]
       workspace_min=np.array([1.30, 0.64, 0.42])
-      workspace_max=np.array([1.43, 0.86, 0.59])
+      workspace_max=np.array([1.36, 0.86, 0.59])
 
     super().__init__(
       max_step=max_step,
@@ -1111,18 +1111,21 @@ class WallsDemoStackEnv(DemoStackEnv):
          2
       """
       obj2_pos = np.copy(obj2_init_pos)
-      obj2_pos[0] = obj0_init_pos[0]
+      # obj2_pos[0] = obj0_init_pos[0]
 
       obj0_pos = np.copy(obj2_pos)
       obj0_pos[2] += 0.05
       obj1_pos = np.copy(obj0_pos)
       obj1_pos[2] += 0.05
       grip_pos = np.copy(obj1_pos) + gripper_offset
-      gripper_state = [0.0, 0.0]
+      gripper_state = [0.05, 0.05]
       final_stack_1 = np.concatenate([grip_pos, gripper_state, obj0_pos, obj1_pos, obj2_pos])
 
+      harder_final_stack = np.copy(final_stack_1)
+      harder_final_stack[:3] = [1.30, 0.65, 0.55]
 
-      return np.stack([touch_1, touch_2, pick_1, pick_2, final_stack_1])
+
+      return np.stack([touch_2,  pick_2, final_stack_1, harder_final_stack])
       # gripper_offset = np.array([-0.01, 0, 0.025])
       # example_stack = np.array([1.33193233, 0.74910037, 0.52473329 + 0.0008, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329, 1.33193233, 0.74910037, 0.52473329])
       # all_goals = []

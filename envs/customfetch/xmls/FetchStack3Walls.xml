@@ -30,7 +30,7 @@
 		<body pos="1.24 0.75 0.45" name="behind_wall">
 			<geom size="0.02 0.25 0.15" type="box" mass="20" rgba="1 1 0 0.05"></geom>
 		</body>
-		<body pos="1.46 0.75 0.45" name="front_wall">
+		<body pos="1.42 0.75 0.45" name="front_wall">
 			<geom size="0.02 0.25 0.15" type="box" mass="20" rgba="1 1 0 0.00"></geom>
 		</body>
 		<body name="object0" pos="0.025 0.025 0.025">
