@@ -1,6 +1,6 @@
 import gym, numpy as np
 
-from envs.customfetch.custom_fetch import PushEnv, SlideEnv, PickPlaceEnv, GoalType, StackEnv, PushLeft, PushRight, SlideNEnv
+from envs.customfetch.custom_fetch import PushEnv, SlideEnv, PickPlaceEnv, GoalType, StackEnv, PushLeft, PushRight, SlideNEnv, WallsDemoStackEnv
 from envs.customfetch.custom_hand import HandBlockEnv, HandPenEnv, HandEggEnv, HandReachFullEnv
 from envs.customfetch.epsilon_wrapper import EpsilonWrapper
 from envs.sibrivalry.toy_maze import PointMaze2D, SimpleMazeEnv
@@ -45,6 +45,9 @@ def make_env(args):
     else:
       env_fn = lambda: AntMazeEnv(variant='AntMaze-SR', eval=False)
       eval_env_fn = lambda: AntMazeEnv(variant='AntMaze-SR', eval=True)
+  elif 'wallsdemo' in args.env.lower():
+    env_fn = lambda: WallsDemoStackEnv(eval=False)
+    eval_env_fn = lambda: WallsDemoStackEnv(eval=True)
   elif 'antpush' in args.env.lower():
     env_fn = lambda: AntMazeEnv(variant='AntPush', eval=False)
     eval_env_fn = lambda: AntMazeEnv(variant='AntPush', eval=True)

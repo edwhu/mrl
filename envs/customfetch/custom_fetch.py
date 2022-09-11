@@ -983,6 +983,9 @@ class WallsDemoStackEnv(DemoStackEnv):
       workspace_max=workspace_max,
       initial_qpos=initial_qpos
     )
+    
+    self.all_goals = self._create_goals()
+
   def _create_goals(self):
     gripper_offset = np.array([-0.01, 0, 0.008])
 
@@ -1056,6 +1059,33 @@ class WallsDemoStackEnv(DemoStackEnv):
     stack_2[[1,6,9]] = obj1_init_pos[1]
 
     return np.stack([touch_1, touch_2, pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
+
+  def _get_obs(self):
+    # just return grip pos, n obj pos.
+    grip_pos = self.sim.data.get_site_xpos('robot0:grip')
+    robot_qpos, robot_qvel = utils.robot_get_obs(self.sim)
+    gripper_state = robot_qpos[-2:]
+    obj_poses = []
+    for i in range(self.n):
+      obj_labl = 'object{}'.format(i)
+      object_pos = self.sim.data.get_site_xpos(obj_labl).ravel()
+      object_pos[2] = max(object_pos[2], self.height_offset)
+      obj_poses.append(object_pos)
+    obj_poses = np.concatenate(obj_poses)
+    achieved_goal = np.concatenate([grip_pos, gripper_state, obj_poses])
+    obs = achieved_goal.copy()
+    return {
+        'observation': obs,
+        'achieved_goal': achieved_goal,
+        'desired_goal': self.goal.copy(),
+    }
+
+  def reset(self):
+    obs = super().reset()
+    goalIndex = np.random.randint(8)
+    obs['desired_goal'] = self.all_goals[goalIndex]
+    self.num_step = 0
+    return obs
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
