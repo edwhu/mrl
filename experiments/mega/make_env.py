@@ -4,7 +4,7 @@ from envs.customfetch.custom_fetch import PushEnv, SlideEnv, PickPlaceEnv, GoalT
 from envs.customfetch.custom_hand import HandBlockEnv, HandPenEnv, HandEggEnv, HandReachFullEnv
 from envs.customfetch.epsilon_wrapper import EpsilonWrapper
 from envs.sibrivalry.toy_maze import PointMaze2D, SimpleMazeEnv
-from envs.sibrivalry.ant_maze import AntMazeEnv, AntMazeEnvFull
+from envs.sibrivalry.ant_maze import AntMazeEnv, AntMazeEnvFull, AntHardMazeEnvFullDownscale
 from envs.goalgan.ant_maze import AntMazeEnv as GGAntMaze
 try:
   import envs.spritelu
@@ -32,6 +32,9 @@ def make_env(args):
   elif 'moat' in args.env.lower():
     env_fn = lambda: make_moat_env(slow_factor=args.slow_factor)
     eval_env_fn = lambda: make_moat_env(slow_factor=args.slow_factor)
+  elif 'anthardmazefull' in args.env.lower():
+    env_fn = lambda: AntHardMazeEnvFullDownscale(variant='AntHardMazeFullDownscale-SR', eval=False)
+    eval_env_fn = lambda: AntHardMazeEnvFullDownscale(variant='AntHardMazeFullDownscale-SR', eval=True)
   elif 'antmazefull' in args.env.lower():
     env_fn = lambda: AntMazeEnvFull(variant='AntMazeFull-SR', eval=False)
     eval_env_fn = lambda: AntMazeEnvFull(variant='AntMazeFull-SR', eval=True)
