@@ -1095,11 +1095,6 @@ class WallsDemoStackEnv(DemoStackEnv):
       goal_poses = np.split(goal[5:], self.n)
       goal_poses.append(goal[:3])
       goal_poses = np.array(goal_poses)
-      # import ipdb; ipdb.set_trace()
-      # print(ag_poses.shape)
-      # import ipdb; ipdb.set_trace()
-      # if (ag_poses.shape == (3,)):
-      #   import ipdb; ipdb.set_trace()
       dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=1)
       succ_per_obj = dist_per_obj < self.distance_threshold
       all_succ = np.all(succ_per_obj).astype(np.float32)
@@ -1108,11 +1103,9 @@ class WallsDemoStackEnv(DemoStackEnv):
       ag_poses = np.split(achieved_goal[:, 5:], self.n, axis=1)
       ag_poses.append(achieved_goal[:,:3])
       ag_poses = np.array(ag_poses)
-      # import ipdb; ipdb.set_trace()
       goal_poses = np.split(goal[:,5:], self.n, axis=1)
       goal_poses.append(goal[:,:3])
       goal_poses = np.array(goal_poses)
-      import ipdb; ipdb.set_trace()
       dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=2)
       succ_per_obj = dist_per_obj < self.distance_threshold
       all_succ = np.all(succ_per_obj, axis = 0).astype(np.float32)
