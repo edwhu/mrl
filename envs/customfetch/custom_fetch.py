@@ -1115,7 +1115,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       import ipdb; ipdb.set_trace()
       dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=2)
       succ_per_obj = dist_per_obj < self.distance_threshold
-      all_succ = np.all(succ_per_obj, axis = 1).astype(np.float32)
+      all_succ = np.all(succ_per_obj, axis = 0).astype(np.float32)
       reward = all_succ - 1
     return reward # has to be 7x1
 
