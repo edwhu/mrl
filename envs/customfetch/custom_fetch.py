@@ -783,7 +783,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
     goal_poses = np.split(goal[5:], self.n)
     goal_poses.append(goal[:3])
     goal_poses = np.array(goal_poses)
-
+    import ipdb; ipdb.set_trace()
     dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=1)
     succ_per_obj = dist_per_obj < self.distance_threshold
     all_succ = np.all(succ_per_obj).astype(np.float32)
@@ -1086,6 +1086,38 @@ class WallsDemoStackEnv(DemoStackEnv):
     obs['desired_goal'] = self.all_goals[goalIndex]
     self.num_step = 0
     return obs
+  
+  def compute_reward(self, achieved_goal, goal, info):
+    if (len(achieved_goal.shape) == 1):
+      ag_poses = np.split(achieved_goal[5:], self.n)
+      ag_poses.append(achieved_goal[:3])
+      ag_poses = np.array(ag_poses)
+      goal_poses = np.split(goal[5:], self.n)
+      goal_poses.append(goal[:3])
+      goal_poses = np.array(goal_poses)
+      # import ipdb; ipdb.set_trace()
+      # print(ag_poses.shape)
+      # import ipdb; ipdb.set_trace()
+      # if (ag_poses.shape == (3,)):
+      #   import ipdb; ipdb.set_trace()
+      dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=1)
+      succ_per_obj = dist_per_obj < self.distance_threshold
+      all_succ = np.all(succ_per_obj).astype(np.float32)
+      reward = all_succ - 1 # maps to -1 if fail, 0 if success.
+    else:
+      ag_poses = np.split(achieved_goal[:, 5:], self.n, axis=1)
+      ag_poses.append(achieved_goal[:,:3])
+      ag_poses = np.array(ag_poses)
+      # import ipdb; ipdb.set_trace()
+      goal_poses = np.split(goal[:,5:], self.n, axis=1)
+      goal_poses.append(goal[:,:3])
+      goal_poses = np.array(goal_poses)
+      import ipdb; ipdb.set_trace()
+      dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=2)
+      succ_per_obj = dist_per_obj < self.distance_threshold
+      all_succ = np.all(succ_per_obj, axis = 1).astype(np.float32)
+      reward = all_succ - 1
+    return reward # has to be 7x1
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
