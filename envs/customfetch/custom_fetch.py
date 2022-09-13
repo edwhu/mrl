@@ -1063,7 +1063,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       """
       stack_2 = np.copy(hard_stack_2)
       stack_2[[1,6,9]] = obj1_init_pos[1]
-      return np.stack([touch_1, touch_2, pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
+      return np.stack([pick_1, pick_2, stack_1, stack_2, hard_stack_1, hard_stack_2])
     elif self.n == 3:
       obj0_init_pos = self.initial_qpos['object0:joint'][:3]
       obj1_init_pos = self.initial_qpos['object1:joint'][:3]
