@@ -1195,6 +1195,45 @@ class WallsDemoStackEnv(DemoStackEnv):
       # remaining_stack_goals = np.stack(remaining_stack_goals[::-1]) # 6
 
       # return np.concatenate([all_goals, remaining_stack_goals, top_stack_goals, start_stack_goals])
+class NoisyWallsDemoStackEnv(WallsDemoStackEnv):
+  def __init__(self,
+              noise_dim,
+              noise_low,
+              noise_high,
+              max_step=100,
+              n=2,
+              mode="-1/0",
+              hard=False,
+              distance_threshold=0.03,
+              eval=False,
+              initial_qpos=None):
+    super().__init__(max_step,n,mode,hard, distance_threshold, eval, initial_qpos)
+    self.noise_dim = noise_dim
+    self.noise_low = noise_low
+    self.noise_high = noise_high
+    obspace = self.observation_space
+    self.observation_space = spaces.Dict(dict(
+        desired_goal=spaces.Box(-np.inf, np.inf, shape=(obspace['desired_goal'].shape[0] + noise_dim,), dtype='float32'),
+        achieved_goal=spaces.Box(-np.inf, np.inf, shape=(obspace['achieved_goal'].shape[0] + noise_dim,), dtype='float32'),
+        observation=spaces.Box(-np.inf, np.inf, shape=(obspace['observation'].shape[0] + noise_dim,), dtype='float32'),
+    ))
+
+  def add_noise(self, obs):
+    for k, v in obs.items():
+      obs[k] = np.hstack([v, self.sampled_noise])
+
+  def reset(self):
+    self.sampled_noise = np.random.uniform(low=self.noise_low, high=self.noise_high, size=self.noise_dim)
+    obs = super().reset()
+    self.add_noise(obs)
+    return obs
+
+  def step(self, action):
+    obs, rew, done, info = super().step(action)
+    self.add_noise(obs)
+    return obs, rew, done, info
+
+
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self, max_step=100, n=2, mode="-1/0", hard=False, distance_threshold=0.03, eval=False, increment=0.01):
