@@ -1233,6 +1233,29 @@ class NoisyWallsDemoStackEnv(WallsDemoStackEnv):
     self.add_noise(obs)
     return obs, rew, done, info
 
+  def get_goals(self):
+    goals = super().get_goals()
+    sampled_noise_mean = np.ones((goals.shape[0], self.noise_dim)) * (self.noise_low + self.noise_high)/2.0
+    goals = np.hstack([goals, sampled_noise_mean])
+    return goals
+
+
+  def get_metrics_dict(self):
+    info = {}
+    dummy_obs = np.ones(self.observation_space['achieved_goal'].shape[0] - self.noise_dim)
+    if self.eval:
+      info = self.add_pertask_success(info, dummy_obs, goal_idx=self.goal_idx)
+      # by default set it to false.
+      info[f"metric_success/goal_{self.goal_idx}"] = 0.0
+    else:
+      info = self.add_pertask_success(info, dummy_obs, goal_idx=None)
+      for k,v in info.items():
+        if 'metric' in k:
+          info[k] = 0.0
+    z_threshold = 0.5
+    for idx in range(self.n):
+      info[f"metric_obj{idx}_above_{z_threshold:.2f}"] = 0.0
+    return info
 
 
 class DiscreteWallsDemoStackEnv(WallsDemoStackEnv):
