@@ -1200,6 +1200,7 @@ class NoisyWallsDemoStackEnv(WallsDemoStackEnv):
               noise_dim,
               noise_low,
               noise_high,
+              reset_interval=1,
               max_step=100,
               n=2,
               mode="-1/0",
@@ -1217,13 +1218,19 @@ class NoisyWallsDemoStackEnv(WallsDemoStackEnv):
         achieved_goal=spaces.Box(-np.inf, np.inf, shape=(obspace['achieved_goal'].shape[0] + noise_dim,), dtype='float32'),
         observation=spaces.Box(-np.inf, np.inf, shape=(obspace['observation'].shape[0] + noise_dim,), dtype='float32'),
     ))
+    self.reset_interval = reset_interval
+    self.num_resets = 0
 
   def add_noise(self, obs):
     for k, v in obs.items():
       obs[k] = np.hstack([v, self.sampled_noise])
 
   def reset(self):
-    self.sampled_noise = np.random.uniform(low=self.noise_low, high=self.noise_high, size=self.noise_dim)
+    print(self.num_resets)
+    if self.num_resets % self.reset_interval == 0:
+      print('generating noise')
+      self.sampled_noise = np.random.uniform(low=self.noise_low, high=self.noise_high, size=self.noise_dim)
+    self.num_resets += 1
     obs = super().reset()
     self.add_noise(obs)
     return obs
