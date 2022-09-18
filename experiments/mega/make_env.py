@@ -1,6 +1,6 @@
 import gym, numpy as np
 
-from envs.customfetch.custom_fetch import PushEnv, SlideEnv, PickPlaceEnv, GoalType, StackEnv, PushLeft, PushRight, SlideNEnv
+from envs.customfetch.custom_fetch import PushEnv, SlideEnv, PickPlaceEnv, GoalType, StackEnv, PushLeft, PushRight, SlideNEnv, WallsDemoStackEnv
 from envs.customfetch.custom_hand import HandBlockEnv, HandPenEnv, HandEggEnv, HandReachFullEnv
 from envs.customfetch.epsilon_wrapper import EpsilonWrapper
 from envs.sibrivalry.toy_maze import PointMaze2D, SimpleMazeEnv
@@ -51,6 +51,9 @@ def make_env(args):
   elif 'antfall' in args.env.lower():
     env_fn = lambda: AntMazeEnv(variant='AntFall', eval=False)
     eval_env_fn = lambda: AntMazeEnv(variant='AntFall', eval=True)
+  elif '3bwallsdemo' in args.env.lower():
+    env_fn = lambda: WallsDemoStackEnv(eval=False, n=3)
+    eval_env_fn = lambda: WallsDemoStackEnv(eval=True, n=3)
   elif ('pen_' in args.env.lower()) or ('block_' in args.env.lower()) or ('egg_' in args.env.lower()):
     # The environment name is of the form: {block,pen,egg}_{full,rotate-{z,parallel,xyz}}_{dist_thres}_{rot_thres}
     env_type, mode, dt, rt = args.env.split('_')

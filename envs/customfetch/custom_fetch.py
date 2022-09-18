@@ -991,6 +991,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       workspace_max=workspace_max,
       initial_qpos=initial_qpos
     )
+    self.all_goals = self._create_goals()
   def _create_goals(self):
     gripper_offset = np.array([-0.01, 0, 0.008])
     if self.n == 2:
@@ -1195,6 +1196,62 @@ class WallsDemoStackEnv(DemoStackEnv):
       # remaining_stack_goals = np.stack(remaining_stack_goals[::-1]) # 6
 
       # return np.concatenate([all_goals, remaining_stack_goals, top_stack_goals, start_stack_goals])
+  def reset(self):
+    obs = super().reset()
+    if self.n == 2:
+      goalIndex = np.random.randint(6)
+    elif self.n == 3:
+      goalIndex = np.random.randint(4)
+    self.goal = self.all_goals[goalIndex]
+    obs['desired_goal'] = self.goal.copy()
+    self.num_step = 0
+    return obs
+  
+  def compute_reward(self, achieved_goal, goal, info):
+    if (len(achieved_goal.shape) == 1):
+      ag_poses = np.split(achieved_goal[5:], self.n)
+      ag_poses.append(achieved_goal[:3])
+      ag_poses = np.array(ag_poses)
+      goal_poses = np.split(goal[5:], self.n)
+      goal_poses.append(goal[:3])
+      goal_poses = np.array(goal_poses)
+      dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=1)
+      succ_per_obj = dist_per_obj < self.distance_threshold
+      all_succ = np.all(succ_per_obj).astype(np.float32)
+      reward = all_succ - 1 # maps to -1 if fail, 0 if success.
+    else:
+      ag_poses = np.split(achieved_goal[:, 5:], self.n, axis=1)
+      ag_poses.append(achieved_goal[:,:3])
+      ag_poses = np.array(ag_poses)
+      goal_poses = np.split(goal[:,5:], self.n, axis=1)
+      goal_poses.append(goal[:,:3])
+      goal_poses = np.array(goal_poses)
+      dist_per_obj = np.linalg.norm(ag_poses - goal_poses, axis=2)
+      succ_per_obj = dist_per_obj < self.distance_threshold
+      all_succ = np.all(succ_per_obj, axis = 0).astype(np.float32)
+      reward = all_succ - 1
+    return reward # has to be 7x1
+
+  def _get_obs(self):
+    # just return grip pos, n obj pos.
+    grip_pos = self.sim.data.get_site_xpos('robot0:grip')
+    robot_qpos, robot_qvel = utils.robot_get_obs(self.sim)
+    gripper_state = robot_qpos[-2:]
+    obj_poses = []
+    for i in range(self.n):
+      obj_labl = 'object{}'.format(i)
+      object_pos = self.sim.data.get_site_xpos(obj_labl).ravel()
+      object_pos[2] = max(object_pos[2], self.height_offset)
+      obj_poses.append(object_pos)
+    obj_poses = np.concatenate(obj_poses)
+    achieved_goal = np.concatenate([grip_pos, gripper_state, obj_poses])
+    obs = achieved_goal.copy()
+    return {
+        'observation': obs,
+        'achieved_goal': achieved_goal,
+        'desired_goal': self.goal.copy(),
+    }
+
 class NoisyWallsDemoStackEnv(WallsDemoStackEnv):
   def __init__(self,
               noise_dim,
