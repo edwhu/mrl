@@ -1083,7 +1083,8 @@ class WallsDemoStackEnv(DemoStackEnv):
   def reset(self):
     obs = super().reset()
     goalIndex = np.random.randint(8)
-    obs['desired_goal'] = self.all_goals[goalIndex]
+    self.goal = self.all_goals[goalIndex]
+    obs['desired_goal'] = self.goal.copy()
     self.num_step = 0
     return obs
   
