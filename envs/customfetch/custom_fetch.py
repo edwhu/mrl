@@ -1124,8 +1124,36 @@ class WallsDemoStackEnv(DemoStackEnv):
       harder_final_stack = np.copy(final_stack_1)
       harder_final_stack[:3] = [1.33, 0.75, 0.59]
 
+      # return np.stack([touch_2,  pick_2, final_stack_1, harder_final_stack])
+      """
+      new extra goals. green always at bottom.
+      """      
+      obj2_pos = np.copy(obj0_init_pos)
+      obj0_pos = np.copy(obj2_pos)
+      obj0_pos[2] += 0.05
+      obj1_pos = np.copy(obj0_pos)
+      obj1_pos[2] += 0.05
+      grip_pos = np.copy(obj1_pos) + gripper_offset
+      gripper_state = [0.05, 0.05]
+      final_stack_2 = np.concatenate([grip_pos, gripper_state, obj0_pos, obj1_pos, obj2_pos])
 
-      return np.stack([touch_2,  pick_2, final_stack_1, harder_final_stack])
+      obj2_pos = np.copy(obj1_init_pos)
+      obj0_pos = np.copy(obj2_pos)
+      obj0_pos[2] += 0.05
+      obj1_pos = np.copy(obj0_pos)
+      obj1_pos[2] += 0.05
+      grip_pos = np.copy(obj1_pos) + gripper_offset
+      gripper_state = [0.05, 0.05]
+      final_stack_3 = np.concatenate([grip_pos, gripper_state, obj0_pos, obj1_pos, obj2_pos])
+
+      return np.stack([final_stack_1, final_stack_2, final_stack_3])
+
+
+
+
+
+
+
       # gripper_offset = np.array([-0.01, 0, 0.025])
       # example_stack = np.array([1.33193233, 0.74910037, 0.52473329 + 0.0008, 0.05 ,  0.05, 1.33193233, 0.74910037, 0.42473329, 1.33193233, 0.74910037, 0.47473329, 1.33193233, 0.74910037, 0.52473329])
       # all_goals = []
