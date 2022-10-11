@@ -1127,7 +1127,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       # return np.stack([touch_2,  pick_2, final_stack_1, harder_final_stack])
       """
       new extra goals. green always at bottom.
-      """      
+      """
       obj2_pos = np.copy(obj0_init_pos)
       obj0_pos = np.copy(obj2_pos)
       obj0_pos[2] += 0.05
@@ -1146,7 +1146,24 @@ class WallsDemoStackEnv(DemoStackEnv):
       gripper_state = [0.05, 0.05]
       final_stack_3 = np.concatenate([grip_pos, gripper_state, obj0_pos, obj1_pos, obj2_pos])
 
-      return np.stack([final_stack_1, final_stack_2, final_stack_3])
+
+      # try shuffling around final stack's objects.
+      original_goals = [final_stack_1, final_stack_2, final_stack_3]
+      all_goals = []
+      from itertools import permutations
+      for og in original_goals:
+        for perm in permutations(range(self.n)):
+          perm = list(perm)
+          new_goal = np.copy(og)
+          for start, end in enumerate(perm):
+            new_goal[5+(end*3): 5+(end*3)+3] = og[5+(start*3): 5+(start*3)+3]
+          all_goals.append(new_goal)
+
+      # import ipdb; ipdb.set_trace()
+
+
+
+      return np.stack(all_goals)
 
 
 
