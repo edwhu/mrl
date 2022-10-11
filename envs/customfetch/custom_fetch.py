@@ -943,7 +943,7 @@ class DemoStackEnv(fetch_env.FetchEnv, EzPickle):
   def render(self, mode='human', width=100, height=100):
       self._render_callback()
       if mode == 'rgb_array':
-          return self.sim.render(height=100, width=100, camera_name="external_camera_0")[::-1]
+          return self.sim.render(height=height, width=width, camera_name="external_camera_0")[::-1]
           # self._get_viewer(mode).render(width, height)
           # # window size used for old mujoco-py:
           # data = self._get_viewer(mode).read_pixels(width, height, depth=False)
