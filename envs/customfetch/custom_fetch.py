@@ -1227,7 +1227,8 @@ class WallsDemoStackEnv(DemoStackEnv):
     # level 1 will have 3.
     # level 2 will have 12.
     # level 3 will have 6.
-    return np.concatenate([all_goals, top_stack_goals[6:],  remaining_stack_goals, top_stack_goals[:6]])
+    # return np.concatenate([all_goals, top_stack_goals[6:],  remaining_stack_goals, top_stack_goals[:6]])
+    return np.concatenate([all_goals, top_stack_goals[6:], top_stack_goals[:6]])
 
     # return np.concatenate([all_goals, remaining_stack_goals, top_stack_goals, start_stack_goals])
 class NoisyWallsDemoStackEnv(WallsDemoStackEnv):
