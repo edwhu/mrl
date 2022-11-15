@@ -1161,6 +1161,11 @@ class WallsDemoStackEnv(DemoStackEnv):
     #   start = 5 + (3*i)
     #   goal[:3] = goal[start: start+3] + gripper_offset # place hand over i-th obj
     #   all_goals.append(goal)
+    obj0_init_pos = self.initial_qpos['object0:joint'][:3]
+    obj1_init_pos = self.initial_qpos['object1:joint'][:3]
+    obj2_init_pos = self.initial_qpos['object2:joint'][:3]
+    obj0_init_pos[2] = obj1_init_pos[2] = obj2_init_pos[2] = 0.425
+    obj_init_pos = [obj0_init_pos, obj1_init_pos, obj2_init_pos]
 
     # create picking goals
     for i in range(self.n):
@@ -1168,7 +1173,7 @@ class WallsDemoStackEnv(DemoStackEnv):
       goal = np.copy(example_stack)
       for j in range(3):
         start = 5 + (3 * j)
-        goal[start: start+3] = self.initial_qpos[f"object{j}:joint"][:3]
+        goal[start: start+3] = obj_init_pos[j][:3]
       start = 5 + (3*i)
       goal[start: start+3] = [1.34193271, 0.74910037, 0.53472273] # pick object to start.
       goal[:3] = goal[start: start+3] + np.array([-0.01, 0, 0.008]) # pick over i-th obj
@@ -1190,7 +1195,7 @@ class WallsDemoStackEnv(DemoStackEnv):
         # first j blocks set to initial pos.
         for i in range(j):
           start = 5 + (3 * perm[i])
-          goal[start: start+3] = prev_pos = self.initial_qpos[f"object{perm[i]}:joint"][:3]
+          goal[start: start+3] = prev_pos = obj_init_pos[perm[i]][:3]
         # remaining blocks set on top.
         for i in range(j, self.n):
           start = 5 + (3 * perm[i])
