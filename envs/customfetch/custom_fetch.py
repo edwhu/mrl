@@ -256,6 +256,13 @@ class StackEnv(fetch_env.FetchEnv, EzPickle):
       else:
         actual_internal_goals = np.split(goal, self.n, axis=1)
         achieved_internal_goals = np.split(achieved_goal, self.n, axis=1)
+    elif self.external_goal == GoalType.ALL:
+      if len(achieved_goal.shape) == 1:
+        actual_internal_goals = np.split(goal, self.n)
+        achieved_internal_goals = np.split(achieved_goal, self.n)
+      else:
+        actual_internal_goals = np.split(goal, self.n, axis=1)
+        achieved_internal_goals = np.split(achieved_goal, self.n, axis=1)
     else:
       raise
 
@@ -272,7 +279,12 @@ class StackEnv(fetch_env.FetchEnv, EzPickle):
       return success - (1. - self.mode)
 
     # use per_dim_thresholds for other dimensions
-    if len(achieved_goal.shape) == 1:
+    if self.external_goal == GoalType.ALL:
+      if len(achieved_goal.shape) == 1:
+        d = goal_distance(achieved_goal[:3], goal[:3])
+      else:
+        d = goal_distance(achieved_goal[:, :3], goal[:, :3])
+    elif len(achieved_goal.shape) == 1:
       d = goal_distance(achieved_goal[-3:], goal[-3:])
     else:
       d = goal_distance(achieved_goal[:, -3:], goal[:, -3:])
@@ -289,30 +301,69 @@ class StackEnv(fetch_env.FetchEnv, EzPickle):
 
     obj_feats = []
     obj_poses = []
+    obj_rel_poses = []
+    obj_rots = []
+    obj_velps = []
+    obj_velrs = []
+    if self.external_goal is not GoalType.ALL:
+      for i in range(self.n):
+        obj_labl = 'object{}'.format(i)
+        object_pos = self.sim.data.get_site_xpos(obj_labl).ravel()
+        object_pos[2] = max(object_pos[2], self.height_offset)
+        # rotations
+        object_rot = rotations.mat2euler(self.sim.data.get_site_xmat(obj_labl)).ravel()
+        # velocities
+        object_velp = (self.sim.data.get_site_xvelp(obj_labl) * dt).ravel()
+        object_velr = (self.sim.data.get_site_xvelr(obj_labl) * dt).ravel()
+        # gripper state
+        object_rel_pos = object_pos - grip_pos
+        #object_velp -= grip_velp
 
-    for i in range(self.n):
-      obj_labl = 'object{}'.format(i)
-      object_pos = self.sim.data.get_site_xpos(obj_labl).ravel()
-      object_pos[2] = max(object_pos[2], self.height_offset)
-      # rotations
-      object_rot = rotations.mat2euler(self.sim.data.get_site_xmat(obj_labl)).ravel()
-      # velocities
-      object_velp = (self.sim.data.get_site_xvelp(obj_labl) * dt).ravel()
-      object_velr = (self.sim.data.get_site_xvelr(obj_labl) * dt).ravel()
-      # gripper state
-      object_rel_pos = object_pos - grip_pos
-      #object_velp -= grip_velp
-
-      obj_feats.append([object_pos, object_rel_pos, object_rot, object_velp, object_velr])
-      obj_poses.append(object_pos)
-
+        obj_feats.append([object_pos, object_rel_pos, object_rot, object_velp, object_velr])
+        obj_poses.append(object_pos)
+    else:
+      for i in range(self.n):
+        obj_labl = 'object{}'.format(i)
+        object_pos = self.sim.data.get_site_xpos(obj_labl).ravel()
+        object_pos[2] = max(object_pos[2], self.height_offset)
+        # rotations
+        object_rot = rotations.mat2euler(self.sim.data.get_site_xmat(obj_labl)).ravel()
+        # velocities
+        object_velp = (self.sim.data.get_site_xvelp(obj_labl) * dt).ravel()
+        object_velr = (self.sim.data.get_site_xvelr(obj_labl) * dt).ravel()
+        # gripper state
+        object_rel_pos = object_pos - grip_pos
+        obj_poses.append(object_pos)
+        obj_rel_poses.append(object_rel_pos)
+        obj_rots.append(object_rot)
+        obj_velps.append(object_velp)
+        obj_velrs.append(object_velr)
+      obj_poses = np.concatenate(obj_poses)
+      obj_rel_poses = np.concatenate(obj_rel_poses)
+      obj_rots = np.concatenate(obj_rots)
+      obj_velps = np.concatenate(obj_velps)
+      obj_velrs = np.concatenate(obj_velrs)
+      obj_feats.append([obj_poses, obj_rel_poses, obj_rots, obj_velps, obj_velrs])
     gripper_state = robot_qpos[-2:]
     gripper_vel = robot_qvel[-2:] * dt  # change to a scalar if the gripper is made symmetric
     if self.external_goal == GoalType.OBJ_GRIP:
       achieved_goal = np.concatenate(obj_poses + [grip_pos])
+    elif self.external_goal == GoalType.ALL:
+      achieved_goal = np.concatenate([
+        obj_poses, # 3d/box
+        grip_pos, # 3d
+        obj_rel_poses, # 3d/box
+        gripper_state, # 2d
+        obj_rots, # 3d/box
+        obj_velps, # 3d/box
+        obj_velrs, # 3d/box
+        grip_velp, # 3d
+        gripper_vel, # 2d
+    ])
+      obs = achieved_goal.copy()
     else:
       achieved_goal = np.concatenate(obj_poses)
-    obs = np.concatenate([grip_pos, gripper_state, grip_velp, gripper_vel] + sum(obj_feats, []))
+      obs = np.concatenate([grip_pos, gripper_state, grip_velp, gripper_vel] + sum(obj_feats, []))
 
     return {
         'observation': obs,
@@ -325,6 +376,8 @@ class StackEnv(fetch_env.FetchEnv, EzPickle):
     sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos)
     if self.external_goal == GoalType.OBJ_GRIP:
       goals = np.split(self.goal[:-3], self.n)
+    elif self.external_goal == GoalType.ALL:
+      goals = np.split(self.goal[:3 * self.n], self.n)
     else:
       goals = np.split(self.goal, self.n)
 
@@ -361,14 +414,19 @@ class StackEnv(fetch_env.FetchEnv, EzPickle):
   def _sample_goal(self):
     bottom_box = self.initial_gripper_xpos[:3] + self.np_random.uniform(-self.target_range, self.target_range, size=3)
     bottom_box[2] = self.height_offset  #self.sim.data.get_joint_qpos('object0:joint')[:3]
-
     goal = []
     for i in range(self.n):
       goal.append(bottom_box + (np.array([0., 0., 0.05]) * i))
-
     if self.external_goal == GoalType.OBJ_GRIP:
       goal.append(goal[-1] + np.array([-0.01, 0., 0.008]))
-
+    elif self.external_goal == GoalType.ALL:
+      goal.append(goal[-1] + np.array([-0.01, 0., 0.008]))
+      for i in range(self.n):
+        goal.append(goal[i] - goal[self.n])
+      goal.append(np.array([-0.02, 0.02])) # Assume gripper state as open as possible
+      for i in range(self.n):
+        goal.append(rotations.quat2euler(INIT_Q_POSES[i][-4:]))
+      goal.append(np.zeros(6 * self.n + 5))
     return np.concatenate(goal)
 
   def step(self, action):
